@@ -36,12 +36,15 @@ The builds are not code-signed, so the first time you run one Windows SmartScree
 
 Commas in numbers are fine. `$` on its own is treated as a plain number, since it can mean more than one currency; write the code (`USD`, `CAD`) when it matters. Click any answer to copy it.
 
+If a line uses a name you have not defined yet, such as `occ * prev` before `occ = 95%`, the name is underlined and the answer column shows `? occ` instead of staying blank. A word straight after a number (`15% tip`) is still just a note.
+
 ## Sheets and tabs
 
 - New sheets are named by date, `2026-10-14`, then `2026-10-14 (2)` for a second one that day. Double-click a tab to rename it; hover to see when it was created.
 - Each sheet is a `.txt` file in `Documents\Tally`, so you can back them up, sync the folder, or open them in any editor. Set `TALLY_DIR` to keep them somewhere else.
 - Closing a tab moves its file to `Documents\Tally\Trash`. Nothing is deleted.
 - Print / PDF prints the current sheet as a clean two-column page.
+- The window reopens where you left it, at the same size, unless that spot was on a monitor that is no longer connected; then it opens centred. Launching Tally while it is already open brings the open window forward instead of starting a second copy.
 
 | Shortcut | Action |
 |---|---|

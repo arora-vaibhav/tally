@@ -101,12 +101,13 @@
   const KW = new Set(["of", "on", "off", "as", "to", "in", "x", "prev", "pr", "ans", "total", "sum"]);
   const TOKEN = /(\d[\d,]*(?:\.\d+)?(?:[kKMB](?![A-Za-z]))?%?)|([A-Za-z_][A-Za-z0-9_]*)|([+\-*\/^×÷=%()])|(\$)|(\s+)|(.)/g;
 
-  function colourExpr(s) {
+  function colourExpr(s, unknown) {
     let html = "", m;
     TOKEN.lastIndex = 0;
     while ((m = TOKEN.exec(s))) {
       const t = esc(m[0]);
       if (m[1]) html += t;                                   // number
+      else if (m[2] && unknown && unknown.has(m[2])) html += `<span class="u">${t}</span>`;
       else if (m[2]) html += KW.has(m[2].toLowerCase()) ? `<span class="k">${t}</span>` : `<span class="v">${t}</span>`;
       else if (m[3] || m[4]) html += `<span class="o">${t}</span>`;
       else html += t;
@@ -121,7 +122,8 @@
     const ci = raw.indexOf("//");
     if (ci >= 0) { code = raw.slice(0, ci); comment = raw.slice(ci); }
     let html;
-    if (!r || r.kind !== "result") html = `<span class="n">${esc(code)}</span>`;
+    if (r && r.kind === "unknown") html = colourExpr(code, new Set(r.names));
+    else if (!r || r.kind !== "result") html = `<span class="n">${esc(code)}</span>`;
     else {
       let label = "", body = code, note = "";
       const lm = body.match(/^(\s*[A-Za-z][A-Za-z0-9 _'()-]{0,40}:\s+)/);
@@ -151,6 +153,11 @@
 
     let widest = 0;
     out.innerHTML = results.map((r, i) => {
+      if (r.kind === "unknown") {
+        const list = r.names.join(", ");
+        const tip = `${list} ${r.names.length === 1 ? "is" : "are"} not defined yet. Name a value first, e.g.  ${r.names[0]} = 95%`;
+        return `<div><span class="unk" title="${esc(tip)}">? ${esc(list)}</span></div>`;
+      }
       if (r.kind !== "result") return "<div></div>";
       widest = Math.max(widest, r.display.length);
       return `<div><span class="r" data-i="${i}" title="Click to copy">${esc(r.display)}</span></div>`;

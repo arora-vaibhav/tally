@@ -120,6 +120,41 @@
     return null;
   }
 
+  // Is this a name math.js already knows: a constant (pi), function (sqrt) or unit (km, CAD)?
+  // A one- or two-letter unit symbol standing alone in arithmetic ("a + b", where b would be
+  // bytes and m metres) is far more likely a name the user forgot to define, so it counts as
+  // unknown there. Attached to a number ("5 m") or after to/in, it stays a unit.
+  function isKnownName(name, parent) {
+    let v;
+    try { v = math.evaluate(name); } catch (e) { return false; }
+    if (v && v.isUnit && name.length <= 2 && parent && parent.type === "OperatorNode" &&
+        !parent.implicit && parent.fn !== "to") return false;
+    return true;
+  }
+
+  // If a line reads as maths that uses names nobody defined (e.g. "occ * prev" before
+  // "occ = 95%"), return those names so the UI can say so instead of showing nothing.
+  // A word sitting right after a number ("15% tip", "1850 rent") is a note, not a name:
+  // math.js reads that as implicit multiplication, so any unknown word inside one means
+  // the line has a note and the normal note handling applies. Only names joined by an
+  // explicit operator ("a + b", "occ * prev") count as undefined.
+  function unknownNames(expr, scope) {
+    if (!/[+\-*\/^=]/.test(expr)) return null;
+    let node;
+    try { node = math.parse(expr); } catch (e) { return null; }
+    let hasNote = false;
+    const names = [];
+    node.traverse((n, path, parent) => {
+      if (n.type !== "SymbolNode") return;
+      if (parent && parent.type === "FunctionNode" && parent.fn === n) return;   // sqrt in sqrt(16)
+      if (parent && parent.type === "AssignmentNode" && parent.object === n) return; // the name being defined
+      if (n.name in scope || isKnownName(n.name, parent)) return;
+      if (parent && parent.type === "OperatorNode" && parent.implicit) hasNote = true;
+      else names.push(n.name);
+    });
+    return hasNote || !names.length ? null : [...new Set(names)];
+  }
+
   function isNumberLike(v) {
     return typeof v === "number" || (v && (v.isBigNumber || v.isFraction));
   }
@@ -167,7 +202,12 @@
       scope.prev = scope.pr = scope.ans = prev === undefined ? 0 : prev;
       scope.total = scope.sum = blockTotal();
 
-      const r = evalWithNote(normalise(stripLabel(trimmed)), scope);
+      const body = normalise(stripLabel(trimmed));
+      // Undefined names are decided on the whole line first, so "total = a + b" says "a, b"
+      // rather than quietly answering the "total" at its start.
+      const names = unknownNames(percentages(body).expr, scope);
+      if (names) { out.push({ kind: "unknown", names }); continue; }
+      const r = evalWithNote(body, scope);
       if (!r) { out.push({ kind: "note" }); continue; }
 
       prev = r.value;

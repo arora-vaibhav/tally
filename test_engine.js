@@ -55,6 +55,28 @@ for (const [line, want, note] of cases) {
   if (!ok) fail++;
   console.log((ok ? "ok   " : "FAIL ") + "currency total -> " + JSON.stringify(t));
 }
+// unknown names are reported, prose is not
+{
+  const kinds = s => evaluateSheet(s).map(r => r.kind === "unknown" ? "unknown:" + r.names.join(",") : r.kind === "result" ? r.display : r.kind);
+  const checks = [
+    ["95%\nocc * prev", ["0.95", "unknown:occ"]],
+    ["occ = 95%\nocc * 100", ["0.95", "95"]],
+    ["rent x 12", ["unknown:rent"]],
+    ["Call the bank - tomorrow", ["note"]],
+    ["just a note", ["note"]],
+    ["sqrt(16) + pi * 0", ["4"]],
+    ["total = a + b", ["unknown:a,b"]],
+    ["4,500 + 15% tip", ["5,175"]],
+    ["1850 rent - estimated", ["1,850"]],
+    ["95% occ", ["0.95"]],
+  ];
+  for (const [src, want] of checks) {
+    const got = kinds(src);
+    const ok = JSON.stringify(got) === JSON.stringify(want);
+    if (!ok) fail++;
+    console.log((ok ? "ok   " : "FAIL ") + JSON.stringify(src) + " -> " + JSON.stringify(got));
+  }
+}
 // "x" as times after a word, not only after a digit (the bug in the first build)
 {
   const r = evaluateSheet("100\nprev x 0.95   less vacancy\nnoi = prev x 0.5\nnoi x 2").map(r => r.display);

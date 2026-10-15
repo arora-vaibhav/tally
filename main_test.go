@@ -70,6 +70,36 @@ func TestSheetStorage(t *testing.T) {
 	}
 }
 
+// A saved window position is only reused if enough of it lands on a real screen.
+func TestVisibleEnough(t *testing.T) {
+	work := rect{0, 0, 2880, 1740}
+	cases := []struct {
+		name string
+		win  rect
+		want bool
+	}{
+		{"fully on screen", rect{100, 100, 1100, 800}, true},
+		{"mostly off the right edge, still grabbable", rect{2600, 200, 3600, 900}, true},
+		{"where an unplugged monitor was", rect{3016, 236, 3959, 907}, false},
+		{"title bar above the screen", rect{100, -300, 1100, 400}, false},
+		{"a sliver at the left", rect{-990, 100, 10, 800}, false},
+	}
+	for _, c := range cases {
+		if got := visibleEnough(c.win, work); got != c.want {
+			t.Errorf("%s: visibleEnough = %v, want %v", c.name, got, c.want)
+		}
+	}
+}
+
+func TestFolderKeyIgnoresCaseAndSlashes(t *testing.T) {
+	if folderKey(`C:\Users\V\Documents\Tally`) != folderKey(`c:\users\v\documents\tally\`) {
+		t.Fatal("the same folder written two ways should share one lock")
+	}
+	if folderKey(`C:\a`) == folderKey(`C:\b`) {
+		t.Fatal("different folders should not share a lock")
+	}
+}
+
 func TestCleanName(t *testing.T) {
 	for in, want := range map[string]string{
 		"  a/b:c  ": "a-b-c",

@@ -70,6 +70,14 @@ func main() {
 		fatal("Cannot create the sheets folder " + dir + ": " + err.Error())
 	}
 
+	local, _ := os.UserCacheDir()
+	stateDir := filepath.Join(local, "Tally")
+	os.MkdirAll(stateDir, 0o755)
+	key := folderKey(dir)
+	if !firstInstance(stateDir, key) {
+		return // Tally is already open on this folder; that window has been brought forward
+	}
+
 	sub, _ := fs.Sub(webFS, "web")
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -83,7 +91,6 @@ func main() {
 		os.Setenv("WEBVIEW2_DEFAULT_BACKGROUND_COLOR", "FF151515")
 	}
 
-	local, _ := os.UserCacheDir()
 	w := webview2.NewWithOptions(webview2.WebViewOptions{
 		Debug:     false,
 		AutoFocus: true,
@@ -100,7 +107,15 @@ func main() {
 		fatal("Could not open the window. Microsoft Edge WebView2 Runtime is required.")
 	}
 	defer w.Destroy()
-	styleTitleBar(uintptr(w.Window()), dark)
+	hwnd := uintptr(w.Window())
+	styleTitleBar(hwnd, dark)
+
+	// Reopen where it was left (only if that spot is still on a monitor), keep tracking it,
+	// and leave the handle where a second launch can find it and bring this window forward.
+	winFile := filepath.Join(stateDir, "window-"+key+".json")
+	restoreWindow(hwnd, winFile)
+	go trackWindow(hwnd, winFile)
+	os.WriteFile(filepath.Join(stateDir, "window-"+key+".hwnd"), []byte(fmt.Sprint(hwnd)), 0o644)
 
 	w.Bind("tallyLoad", load)
 	w.Bind("tallySave", save)
