@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Engine tests
+        run: node test_engine.js
+
+      - name: Storage tests
+        run: go test ./...
+
+      - name: Build x64 and ARM64
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist | Out-Null
+          $env:GOARCH = "amd64"; go build -ldflags "-H windowsgui -s -w" -o dist/Tally-x64.exe .
+          $env:GOARCH = "arm64"; go build -ldflags "-H windowsgui -s -w" -o dist/Tally-arm64.exe .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Tally-windows
+          path: dist/*.exe

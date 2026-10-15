@@ -1,0 +1,15 @@
+Tally
+Copyright (c) 2026 Vaibhav Arora. Released under the MIT License (see LICENSE).
+
+This product bundles math.js 13.2.0 (web/math.js), Copyright (C) 2013-2024 Jos de Jong,
+licensed under the Apache License, Version 2.0. The full licence and math.js's own NOTICE
+are in licenses/mathjs-LICENSE.txt and licenses/mathjs-NOTICE.txt.
+https://mathjs.org
+
+It also uses, at build time:
+  github.com/jchv/go-webview2   MIT License
+  golang.org/x/sys              BSD 3-Clause License
+
+Exchange rates are the European Central Bank reference rates, fetched from
+frankfurter.dev, a free open-source API. They are published once each working day and
+are for reference, not for transactions.
