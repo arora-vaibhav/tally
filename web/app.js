@@ -21,6 +21,7 @@
     folder: () => window.tallyOpenFolder(),
     choose: () => window.tallyChooseFolder(), // null when the picker is cancelled
     use: f => window.tallyUseFolder(f),
+    openPath: p => window.tallyOpenPath(p),
   } : (() => {
     const K = "tally.sheets";
     const read = () => { try { return JSON.parse(localStorage.getItem(K)) || { sheets: [], active: "" }; } catch (e) { return { sheets: [], active: "" }; } };
@@ -39,6 +40,7 @@
       folder: async () => toast("Sheets are in browser storage here"),
       choose: async () => { toast("Folders need the Tally app"); return null; },
       use: async () => null,
+      openPath: async () => null,
     };
   })();
 
@@ -352,6 +354,21 @@
     finally { switching = false; src.readOnly = false; src.focus({ preventScroll: true }); }
   }
   const chooseFolder = () => openFolder(store.choose);
+  // a .note or .txt opened from Explorer while Tally was open: show its folder and its tab
+  window.tallyFileOpened = path => openFolder(() => store.openPath(path));
+
+  // a newer version has been downloaded beside this one; offer the restart
+  window.tallyUpdateReady = tag => {
+    const u = $("#update");
+    u.textContent = `Tally ${String(tag).replace(/^v/, "")} is ready. Restart`;
+    u.hidden = false;
+  };
+  $("#update").addEventListener("click", async () => {
+    await flush();
+    if (dirty) { toast("This sheet could not be saved, so Tally did not restart"); return; }
+    try { await window.tallyRestart(); } catch (e) { toast("Could not restart: " + e); }
+  });
+  if (native) window.tallyVersion().then(v => { $("#version").textContent = "Tally " + (v === "dev" ? "development build" : v.replace(/^v/, "")); }).catch(() => {});
 
   function renderFolderMenu() {
     menu.innerHTML = "";

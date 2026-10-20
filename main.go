@@ -24,6 +24,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 	"unsafe"
 
 	webview2 "github.com/jchv/go-webview2"
@@ -58,16 +59,70 @@ var (
 	mu  sync.Mutex
 )
 
-func main() {
+// defaultDir is Documents\Tally, or TALLY_DIR to keep sheets somewhere else.
+func defaultDir() string {
+	if d := os.Getenv("TALLY_DIR"); d != "" {
+		return d
+	}
 	docs, err := windows.KnownFolderPath(windows.FOLDERID_Documents, 0)
 	if err != nil || docs == "" {
 		home, _ := os.UserHomeDir()
 		docs = filepath.Join(home, "Documents")
 	}
-	dir = filepath.Join(docs, "Tally")
-	if d := os.Getenv("TALLY_DIR"); d != "" {
-		dir = d // keep sheets somewhere else, e.g. a synced folder or a portable copy
+	return filepath.Join(docs, "Tally")
+}
+
+// tallyRunning reports whether a Tally window is open (it holds the instance lock).
+func tallyRunning() bool {
+	name, _ := windows.UTF16PtrFromString(`Local\Tally-` + folderKey(defaultDir()))
+	h, err := windows.CreateMutex(nil, false, name)
+	if h != 0 {
+		windows.CloseHandle(h)
 	}
+	return err == windows.ERROR_ALREADY_EXISTS
+}
+
+func message(text string, flags uint32) int32 {
+	r, _ := windows.MessageBox(0, windows.StringToUTF16Ptr(text), windows.StringToUTF16Ptr("Tally"), flags)
+	return r
+}
+
+func main() {
+	args := os.Args[1:]
+	for _, a := range args {
+		if a == "--uninstall" {
+			if tallyRunning() {
+				message("Close Tally first, then uninstall it again.", windows.MB_ICONINFORMATION)
+			} else if message("Remove Tally from this PC?\n\nYour sheets stay where they are.", windows.MB_YESNO|windows.MB_ICONQUESTION) == 6 { // IDYES
+				if err := uninstall(); err != nil {
+					fatal("Could not uninstall Tally: " + err.Error())
+				}
+				message("Tally has been removed. Your sheets are still in "+defaultDir()+".", windows.MB_ICONINFORMATION)
+			}
+			return
+		}
+	}
+	if wantsInstall(args) {
+		wasRunning := tallyRunning()
+		exe, err := install()
+		if err != nil {
+			fatal("Could not install Tally: " + err.Error())
+		}
+		msg := "Tally " + strings.TrimPrefix(version, "v") + " is installed.\n\nOpen it from the Start menu. Files ending in .note open in Tally, and Tally updates itself when a new version comes out."
+		if wasRunning {
+			msg += "\n\nTally is open now: close it and open it again to use this version."
+		}
+		message(msg, windows.MB_ICONINFORMATION)
+		if !wasRunning {
+			exec.Command(exe).Start()
+		}
+		return
+	}
+	waitForExit(args)        // a restart after an update
+	removeOld(selfExe())     // copies an update or reinstall replaced
+	opening := fileArg(args) // a .note or .txt opened from Explorer
+
+	dir = defaultDir()
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		fatal("Cannot create the sheets folder " + dir + ": " + err.Error())
 	}
@@ -80,13 +135,24 @@ func main() {
 	key := folderKey(dir)
 	settingsFile = filepath.Join(stateDir, "settings-"+key+".json")
 	if !firstInstance(stateDir, key) {
-		return // Tally is already open on this folder; that window has been brought forward
+		// Tally is already open and has been brought forward; it takes over the file, if any
+		if opening != "" {
+			sendToRunning(stateDir, key, opening)
+		}
+		return
 	}
-	if last := readSettings().Folder; last != "" && isDir(last) && holdFolder(last) {
+	if last := readSettings().Folder; opening != "" && startWith(opening) {
+		// the folder of the file opened from Explorer
+	} else if last != "" && isDir(last) && holdFolder(last) {
 		dir = last
 	} else {
 		holdFolder(dir)
 	}
+	if samePath(selfExe(), installedExe()) {
+		go register(installedExe()) // keeps the .note link and the version in Settings > Apps current
+	}
+	opens := make(chan string, 8)
+	go listenForOpens(stateDir, key, opens) // listening before the window exists, so no open is missed
 
 	sub, _ := fs.Sub(webFS, "web")
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
@@ -142,6 +208,26 @@ func main() {
 	})
 	w.Bind("tallyChooseFolder", chooseFolder)
 	w.Bind("tallyUseFolder", useFolder)
+	w.Bind("tallyOpenPath", openPath)
+	w.Bind("tallyVersion", func() string { return version })
+	w.Bind("tallyRestart", func() error {
+		if err := restart(); err != nil {
+			return err
+		}
+		w.Terminate()
+		return nil
+	})
+	run := func(js string) { w.Dispatch(func() { w.Eval(js) }) }
+	go func() {
+		for p := range opens {
+			arg, _ := json.Marshal(p)
+			run("window.tallyFileOpened && window.tallyFileOpened(" + string(arg) + ")")
+		}
+	}()
+	go watchForUpdates(func(tag string) {
+		arg, _ := json.Marshal(tag)
+		run("window.tallyUpdateReady && window.tallyUpdateReady(" + string(arg) + ")")
+	})
 
 	// Exchange rates: the page asks for whatever is cached, and a background fetch refreshes
 	// the cache and tells the page when newer rates arrive. The window never waits on the network.
@@ -183,7 +269,23 @@ func cleanName(n string) string {
 	return n
 }
 
-func pathOf(name string) string { return filepath.Join(dir, cleanName(name)+".txt") }
+// Sheets are .note files (Tally's own, so a double-click opens Tally) or plain .txt files.
+// files maps each sheet name shown in a tab to its file name in dir; callers hold mu.
+const noteExt = ".note"
+
+var files = map[string]string{}
+
+func isSheetFile(name string) bool {
+	ext := strings.ToLower(filepath.Ext(name))
+	return ext == ".txt" || ext == noteExt
+}
+
+func pathOf(name string) string {
+	if f, ok := files[name]; ok {
+		return filepath.Join(dir, f)
+	}
+	return filepath.Join(dir, cleanName(name)+noteExt)
+}
 
 func exists(p string) bool { _, err := os.Stat(p); return err == nil }
 
@@ -191,7 +293,11 @@ func exists(p string) bool { _, err := os.Stat(p); return err == nil }
 func uniqueName(name string) string {
 	base := cleanName(name)
 	n := base
-	for i := 2; exists(pathOf(n)); i++ {
+	taken := func(n string) bool {
+		_, ok := files[n]
+		return ok || exists(filepath.Join(dir, n+".txt")) || exists(filepath.Join(dir, n+noteExt))
+	}
+	for i := 2; taken(n); i++ {
 		n = fmt.Sprintf("%s (%d)", base, i)
 	}
 	return n
@@ -224,6 +330,7 @@ func writeAtomic(p string, b []byte) error {
 func load() (loadResult, error) {
 	mu.Lock()
 	defer mu.Unlock()
+	pageLoaded = true
 	return loadLocked()
 }
 
@@ -233,11 +340,18 @@ func loadLocked() (loadResult, error) {
 	if err != nil {
 		return loadResult{}, err
 	}
-	var files []string
+	found := map[string]string{} // name -> file, built fresh so a failed load leaves files alone
+	var paths []string
 	for _, e := range entries {
-		if !e.IsDir() && strings.HasSuffix(e.Name(), ".txt") {
-			files = append(files, filepath.Join(dir, e.Name()))
+		if e.IsDir() || !isSheetFile(e.Name()) {
+			continue
 		}
+		name := strings.TrimSuffix(e.Name(), filepath.Ext(e.Name()))
+		if _, dup := found[name]; dup {
+			name = e.Name() // "Deal.note" next to "Deal.txt": show the second with its extension
+		}
+		found[name] = e.Name()
+		paths = append(paths, name)
 	}
 	st := readState()
 	rank := map[string]int{}
@@ -249,11 +363,11 @@ func loadLocked() (loadResult, error) {
 	if st.Created == nil {
 		st.Created = map[string]string{}
 	}
-	for _, f := range files {
-		name := strings.TrimSuffix(filepath.Base(f), ".txt")
+	for _, name := range paths {
+		f := filepath.Join(dir, found[name])
 		b, err := os.ReadFile(f)
-		if err != nil {
-			continue
+		if err != nil || !utf8.Valid(b) {
+			continue // a .txt in another encoding is left alone rather than rewritten as UTF-8
 		}
 		created, ok := st.Created[name]
 		if !ok {
@@ -281,7 +395,17 @@ func loadLocked() (loadResult, error) {
 			return out[i].Name < out[j].Name
 		}
 	})
-	return loadResult{Sheets: out, Active: st.Active, Folder: dir, Recent: recentFolders()}, nil
+	files = found
+	active := st.Active
+	if pendingOpen != "" { // a file Tally was asked to open: show its tab
+		for n, f := range files {
+			if strings.EqualFold(f, filepath.Base(pendingOpen)) && folderKey(filepath.Dir(pendingOpen)) == folderKey(dir) {
+				active = n
+			}
+		}
+		pendingOpen = ""
+	}
+	return loadResult{Sheets: out, Active: active, Folder: dir, Recent: recentFolders()}, nil
 }
 
 func save(name, text string) error {
@@ -299,9 +423,10 @@ func create(name string) (created, error) {
 	mu.Lock()
 	defer mu.Unlock()
 	n := uniqueName(name)
-	if err := writeAtomic(pathOf(n), nil); err != nil {
+	if err := writeAtomic(filepath.Join(dir, n+noteExt), nil); err != nil {
 		return created{}, err
 	}
+	files[n] = n + noteExt
 	now := time.Now().Format(time.RFC3339)
 	st := readState()
 	if st.Created == nil {
@@ -315,12 +440,16 @@ func rename(oldName, newName string) (string, error) {
 	mu.Lock()
 	defer mu.Unlock()
 	if cleanName(newName) == cleanName(oldName) {
-		return cleanName(oldName), nil
+		return oldName, nil // the tab keeps the name its file is known by
 	}
 	n := uniqueName(newName)
-	if err := os.Rename(pathOf(oldName), pathOf(n)); err != nil {
+	src := pathOf(oldName)
+	f := n + filepath.Ext(src) // a renamed sheet keeps its .txt or .note
+	if err := os.Rename(src, filepath.Join(dir, f)); err != nil {
 		return oldName, err
 	}
+	delete(files, oldName)
+	files[n] = f
 	// the creation date follows the sheet to its new name
 	st := readState()
 	if c, ok := st.Created[oldName]; ok {
@@ -342,8 +471,14 @@ func trash(name string) error {
 	if err := os.MkdirAll(bin, 0o755); err != nil {
 		return err
 	}
-	dst := filepath.Join(bin, fmt.Sprintf("%s (closed %s).txt", cleanName(name), time.Now().Format("2006-01-02 1504")))
-	return os.Rename(src, dst)
+	base := filepath.Base(src)
+	ext := filepath.Ext(base)
+	dst := filepath.Join(bin, fmt.Sprintf("%s (closed %s)%s", strings.TrimSuffix(base, ext), time.Now().Format("2006-01-02 1504"), ext))
+	if err := os.Rename(src, dst); err != nil {
+		return err
+	}
+	delete(files, name)
+	return nil
 }
 
 func order(names []string, active string) error {

@@ -8,14 +8,18 @@ Inspired by [Numi](https://numi.app), with the things I missed on Windows: tabs 
 
 ## Download
 
-Get the latest build from the [Releases](../../releases) page:
+Get the installer from the [Releases](../../releases) page:
 
 | Your PC | File |
 |---|---|
-| Intel or AMD (most Windows PCs) | `Tally-x64.exe` |
-| ARM, such as Snapdragon laptops | `Tally-arm64.exe` |
+| Intel or AMD (most Windows PCs) | `Tally-Setup-x64.exe` |
+| ARM, such as Snapdragon laptops | `Tally-Setup-arm64.exe` |
 
-There is nothing to install. Put the file anywhere and run it. Windows 10 and 11 already include the Edge WebView2 runtime it uses.
+Run it once. Tally installs for your Windows account only (no administrator prompt) into `%LOCALAPPDATA%\Programs\Tally`, adds itself to the Start menu, makes `.note` files open in Tally, and appears in Settings > Apps, where you can uninstall it. Uninstalling never touches your sheets. Windows 10 and 11 already include the Edge WebView2 runtime it uses.
+
+Tally keeps itself up to date. It checks for a new release when it starts and every 12 hours, downloads the build for your PC, checks it against the SHA-256 that GitHub publishes for that file, and shows "Tally x.y.z is ready. Restart" at the bottom of the window. Click it, or just open Tally again later.
+
+Prefer no installer? `Tally-x64.exe` and `Tally-arm64.exe` run from anywhere, and update themselves the same way if their folder is writable.
 
 The builds are not code-signed, so the first time you run one Windows SmartScreen may show "Windows protected your PC". Click "More info", then "Run anyway".
 
@@ -42,7 +46,8 @@ If a line uses a name you have not defined yet, such as `occ * prev` before `occ
 
 - New sheets are named by date, `2026-10-14`, then `2026-10-14 (2)` for a second one that day. Double-click a tab to rename it; hover to see when it was created.
 - Drag a tab to move it, or press Ctrl+Shift+PgUp / PgDn to move the open one. Tabs reopen in the order you left them.
-- Each sheet is a `.txt` file in `Documents\Tally`, so you can back them up, sync the folder, or open them in any editor. Set `TALLY_DIR` to keep them somewhere else.
+- Each sheet is a plain text file in `Documents\Tally`, so you can back them up, sync the folder, or open them in any editor. New sheets are `.note` files, which open in Tally when you double-click them; `.txt` files in the folder show up as sheets too. Set `TALLY_DIR` to keep them somewhere else.
+- Opening a `.note` file (or a `.txt` with Open with > Tally) opens the folder it is in, with every sheet there as a tab, and shows that one. If Tally is already open, that window switches to it.
 - Tally shows one folder of sheets at a time. Click the folder button to switch between recent folders, or choose another one (Ctrl+O), such as a folder per deal or per month. The picker can also make a new folder. Tally reopens on the folder you used last.
 - Closing a tab moves its file to a `Trash` folder inside the sheets folder. Nothing is deleted.
 - Print / PDF prints the current sheet as a clean two-column page.
@@ -62,7 +67,7 @@ If a line uses a name you have not defined yet, such as `occ * prev` before `occ
 
 Rates are the European Central Bank reference rates (about 30 currencies) from [frankfurter.dev](https://frankfurter.dev). Tally fetches them in the background at most every 12 hours and keeps the last set in `%LOCALAPPDATA%\Tally\rates.json`, so conversions still work offline. The status line shows the date of the rates in use. They are reference rates, published once each working day, not the rate your bank will give you.
 
-That rate request is the only thing Tally sends over the network. Your sheets never leave your PC.
+That rate request and the update check (to api.github.com, then the download from GitHub) are the only things Tally sends over the network. Your sheets never leave your PC.
 
 ## Build from source
 
@@ -80,6 +85,11 @@ How it fits together:
 
 - `main.go` opens a native window with WebView2, serves the page from the embedded `web/` folder, and reads and writes the sheet files.
 - `folder.go` keeps the folder in use and the recent list, and opens the Windows folder picker.
+- `open.go` opens a sheet file from Explorer, handing it to the open window if there is one.
+- `install.go` is the installer: the same program run as `Tally-Setup-*.exe` (or with `--install`) installs itself; `--uninstall` removes it.
+- `update.go` checks GitHub releases and swaps in a verified newer build.
+
+Releases: push a tag such as `v1.3.0` with the release notes as its message (`git tag -a v1.3.0 -m "..."`). CI builds both architectures with that version stamped in and publishes the installers, the plain builds and their checksums. Installed copies pick it up on their next check. Local builds are `dev` and never update.
 - `web/engine.js` turns a sheet into one answer per line, on top of [math.js](https://mathjs.org).
 - `web/app.js` and `web/index.html` are the editor, tabs, copying and printing.
 

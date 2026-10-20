@@ -7,7 +7,7 @@ on:
   pull_request:
 
 permissions:
-  contents: read
+  contents: write # publishing a release on a version tag
 
 jobs:
   build:
@@ -29,14 +29,36 @@ jobs:
       - name: Storage tests
         run: go test ./...
 
+      # A tag build carries its version, which is what lets installed copies update to it.
+      # The setup files are the same program; the "Setup" name makes it install itself.
       - name: Build x64 and ARM64
         shell: pwsh
         run: |
+          $version = if ($env:GITHUB_REF_TYPE -eq "tag") { $env:GITHUB_REF_NAME } else { "dev" }
+          $flags = "-H windowsgui -s -w -X main.version=$version"
           New-Item -ItemType Directory -Force dist | Out-Null
-          $env:GOARCH = "amd64"; go build -ldflags "-H windowsgui -s -w" -o dist/Tally-x64.exe .
-          $env:GOARCH = "arm64"; go build -ldflags "-H windowsgui -s -w" -o dist/Tally-arm64.exe .
+          $env:GOARCH = "amd64"; go build -ldflags $flags -o dist/Tally-x64.exe .
+          $env:GOARCH = "arm64"; go build -ldflags $flags -o dist/Tally-arm64.exe .
+          Copy-Item dist/Tally-x64.exe dist/Tally-Setup-x64.exe
+          Copy-Item dist/Tally-arm64.exe dist/Tally-Setup-arm64.exe
 
       - uses: actions/upload-artifact@v4
         with:
           name: Tally-windows
           path: dist/*.exe
+
+      # Release notes are the tag's message plus checksums; Tally checks its download
+      # against the SHA-256 GitHub records for each file.
+      - name: Publish the release
+        if: github.ref_type == 'tag'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = $env:GITHUB_REF_NAME
+          git fetch --force origin "refs/tags/${tag}:refs/tags/${tag}"
+          $notes = (git tag -l --format='%(contents)' $tag) -join "`n"
+          $sums = Get-ChildItem dist/*.exe | ForEach-Object { "{0}  {1}" -f (Get-FileHash $_ -Algorithm SHA256).Hash.ToLower(), $_.Name }
+          $body = $notes.Trim() + "`n`nSHA-256:`n`n``````n" + ($sums -join "`n") + "`n``````n"
+          Set-Content -Path notes.md -Value $body -Encoding utf8NoBOM
+          gh release create $tag dist/Tally-Setup-x64.exe dist/Tally-Setup-arm64.exe dist/Tally-x64.exe dist/Tally-arm64.exe --title ("Tally " + $tag.TrimStart("v")) --notes-file notes.md --verify-tag

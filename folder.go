@@ -95,6 +95,7 @@ func useFolder(folder string) (loadResult, error) {
 	}
 	dir = old
 	holdFolder(old)
+	loadLocked() // files must describe the folder in use again
 	return loadResult{}, err
 }
 
