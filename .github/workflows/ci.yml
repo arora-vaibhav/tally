@@ -59,6 +59,7 @@ jobs:
           git fetch --force origin "refs/tags/${tag}:refs/tags/${tag}"
           $notes = (git tag -l --format='%(contents)' $tag) -join "`n"
           $sums = Get-ChildItem dist/*.exe | ForEach-Object { "{0}  {1}" -f (Get-FileHash $_ -Algorithm SHA256).Hash.ToLower(), $_.Name }
-          $body = $notes.Trim() + "`n`nSHA-256:`n`n``````n" + ($sums -join "`n") + "`n``````n"
+          $fence = '```'
+          $body = $notes.Trim() + "`n`nSHA-256:`n`n$fence`n" + ($sums -join "`n") + "`n$fence`n"
           Set-Content -Path notes.md -Value $body -Encoding utf8NoBOM
           gh release create $tag dist/Tally-Setup-x64.exe dist/Tally-Setup-arm64.exe dist/Tally-x64.exe dist/Tally-arm64.exe --title ("Tally " + $tag.TrimStart("v")) --notes-file notes.md --verify-tag
