@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"golang.org/x/sys/windows"
 )
 
 // The storage layer: plain .txt sheets, unique "(n)" names, creation dates that survive
@@ -109,5 +111,69 @@ func TestCleanName(t *testing.T) {
 		if got := cleanName(in); got != want {
 			t.Errorf("cleanName(%q) = %q, want %q", in, got, want)
 		}
+	}
+}
+
+// Switching folders shows only that folder's sheets, is remembered for next launch, and
+// keeps a short recent list with the current folder first and no duplicates.
+func TestUseFolder(t *testing.T) {
+	a, b := t.TempDir(), t.TempDir()
+	settingsFile = filepath.Join(t.TempDir(), "settings.json")
+	defer func() { settingsFile = "" }()
+	dir = a
+	create("In A")
+
+	res, err := useFolder(b)
+	if err != nil || res.Folder != b || len(res.Sheets) != 0 {
+		t.Fatalf("switch to empty folder = %+v, %v", res, err)
+	}
+	if s := readSettings(); s.Folder != b {
+		t.Fatalf("last folder not remembered: %+v", s)
+	}
+	res, _ = useFolder(a + `\`)
+	if len(res.Sheets) != 1 || res.Sheets[0].Name != "In A" {
+		t.Fatalf("back in A = %+v", res.Sheets)
+	}
+	if len(res.Recent) != 2 || folderKey(res.Recent[0]) != folderKey(a) || folderKey(res.Recent[1]) != folderKey(b) {
+		t.Fatalf("recent = %v, want A then B once each", res.Recent)
+	}
+	if _, err := useFolder(filepath.Join(a, "missing")); err == nil || folderKey(dir) != folderKey(a) {
+		t.Fatalf("a missing folder should be refused and leave the current one: err %v, dir %s", err, dir)
+	}
+
+	var many []string
+	for i := 0; i < 20; i++ {
+		many = addRecent(many, filepath.Join(`C:\f`, string(rune('a'+i))))
+	}
+	if len(many) != maxRecent || many[0] != `C:\f\t` {
+		t.Fatalf("recent list not capped newest first: %v", many)
+	}
+}
+
+// Brackets in a folder name are just characters, and a folder another Tally window holds
+// is refused without changing the folder in use.
+func TestUseFolderEdgeCases(t *testing.T) {
+	settingsFile = filepath.Join(t.TempDir(), "settings.json")
+	defer func() { settingsFile = "" }()
+	home := t.TempDir()
+	dir = home
+
+	odd := filepath.Join(t.TempDir(), "Notes [old")
+	os.MkdirAll(odd, 0o755)
+	os.WriteFile(filepath.Join(odd, "Deal.txt"), []byte("1+1"), 0o644)
+	res, err := useFolder(odd)
+	if err != nil || len(res.Sheets) != 1 || res.Sheets[0].Name != "Deal" {
+		t.Fatalf("folder with [ = %+v, %v", res, err)
+	}
+
+	busy := t.TempDir()
+	name, _ := windows.UTF16PtrFromString(`Local\Tally-folder-` + folderKey(busy))
+	h, _ := windows.CreateMutex(nil, false, name) // as if another Tally window had it open
+	defer windows.CloseHandle(h)
+	if _, err := useFolder(busy); err == nil || folderKey(dir) != folderKey(odd) {
+		t.Fatalf("held folder: err %v, dir %s; want refused and still %s", err, dir, odd)
+	}
+	if s := readSettings(); folderKey(s.Folder) != folderKey(odd) {
+		t.Fatalf("a refused switch must not be remembered: %+v", s)
 	}
 }

@@ -19,6 +19,8 @@
     trash: n => window.tallyTrash(n),
     order: (names, active) => window.tallyOrder(names, active),
     folder: () => window.tallyOpenFolder(),
+    choose: () => window.tallyChooseFolder(), // null when the picker is cancelled
+    use: f => window.tallyUseFolder(f),
   } : (() => {
     const K = "tally.sheets";
     const read = () => { try { return JSON.parse(localStorage.getItem(K)) || { sheets: [], active: "" }; } catch (e) { return { sheets: [], active: "" }; } };
@@ -35,6 +37,8 @@
       trash: async n => { const d = read(); d.sheets = d.sheets.filter(s => s.name !== n); write(d); },
       order: async (names, active) => { const d = read(); d.sheets.sort((a, b) => names.indexOf(a.name) - names.indexOf(b.name)); d.active = active; write(d); },
       folder: async () => toast("Sheets are in browser storage here"),
+      choose: async () => { toast("Folders need the Tally app"); return null; },
+      use: async () => null,
     };
   })();
 
@@ -52,6 +56,7 @@
   let active = 0;
   let results = [];
   let folder = "";
+  let recent = [];      // sheets folders to switch between, the current one first
   let saveTimer = null, dirty = false;
   const cur = () => sheets[active];
 
@@ -296,6 +301,51 @@
     window.print();
   }
 
+  // ---- sheets folder ---------------------------------------------------
+  const menu = $("#folderMenu");
+  const trimSlash = f => f.replace(/[\\/]+$/, "");
+  const baseName = f => trimSlash(f).split(/[\\/]/).pop() || f;
+  const parentOf = f => trimSlash(f).replace(/[\\/][^\\/]*$/, "");
+  const sameFolder = (a, b) => trimSlash(a).toLowerCase() === trimSlash(b).toLowerCase();
+
+  let switching = false;
+  async function openFolder(pick) {
+    menu.classList.remove("on");
+    if (switching) return;
+    switching = true; src.readOnly = true; // no typing while the folder changes under the editor
+    try {
+      await flush(); // the open sheet is saved into the folder it came from
+      if (dirty) { toast("This sheet could not be saved, so the folder was not switched"); return; }
+      const data = await pick();
+      if (!data) return; // picker cancelled
+      await show(data, "");
+      toast("Sheets from " + baseName(folder));
+    } catch (e) { toast("Could not open folder: " + e); }
+    finally { switching = false; src.readOnly = false; src.focus({ preventScroll: true }); }
+  }
+  const chooseFolder = () => openFolder(store.choose);
+
+  function renderFolderMenu() {
+    menu.innerHTML = "";
+    const item = (tick, name, path, title, onClick) => {
+      const d = document.createElement("div"); d.className = "item"; d.title = title;
+      d.innerHTML = `<span class="tick">${tick}</span><span>${esc(name)}</span>` + (path ? `<span class="path">${esc(path)}</span>` : "");
+      d.addEventListener("click", onClick);
+      menu.append(d);
+    };
+    if (recent.length) {
+      const l = document.createElement("div"); l.className = "label"; l.textContent = "Sheets folder"; menu.append(l);
+      for (const f of recent) {
+        const isCur = sameFolder(f, folder);
+        item(isCur ? "&#10003;" : "", baseName(f), parentOf(f), f,
+          () => isCur ? menu.classList.remove("on") : openFolder(() => store.use(f)));
+      }
+      menu.append(document.createElement("hr"));
+    }
+    item("", "Choose folder...", "Ctrl+O", "Pick or create a folder of sheets", chooseFolder);
+    item("", "Show in Explorer", "", folder, () => { menu.classList.remove("on"); store.folder(); });
+  }
+
   // ---- editor behaviour ------------------------------------------------
   function previousAnswerRaw() {
     const line = src.value.slice(0, src.selectionStart).split("\n").length - 1;
@@ -328,13 +378,14 @@
   });
 
   document.addEventListener("keydown", e => {
-    if (e.key === "Escape") $("#help").classList.remove("on");
+    if (e.key === "Escape") { $("#help").classList.remove("on"); menu.classList.remove("on"); }
     if (!(e.ctrlKey || e.metaKey)) return;
     const k = e.key.toLowerCase();
     if (k === "t" || k === "n") { e.preventDefault(); newSheet(); }
     else if (k === "w") { e.preventDefault(); closeSheet(active); }
     else if (k === "p") { e.preventDefault(); printSheet(); }
     else if (k === "s") { e.preventDefault(); flush(); toast("Saved"); }
+    else if (k === "o") { e.preventDefault(); chooseFolder(); }
     else if (e.key === "Tab") { e.preventDefault(); switchTo((active + (e.shiftKey ? -1 : 1) + sheets.length) % sheets.length); }
     else if (/^[1-9]$/.test(e.key)) { e.preventDefault(); switchTo(Math.min(+e.key, sheets.length) - 1); }
   });
@@ -342,9 +393,16 @@
   $("#add").addEventListener("click", newSheet);
   $("#copyTable").addEventListener("click", copyTable);
   $("#printBtn").addEventListener("click", printSheet);
-  $("#folder").addEventListener("click", () => store.folder());
-  $("#helpBtn").addEventListener("click", e => { e.stopPropagation(); $("#help").classList.toggle("on"); });
-  document.addEventListener("click", e => { if (!e.target.closest("#help")) $("#help").classList.remove("on"); });
+  $("#folder").addEventListener("click", e => {
+    e.stopPropagation(); $("#help").classList.remove("on");
+    if (!menu.classList.contains("on")) renderFolderMenu();
+    menu.classList.toggle("on");
+  });
+  $("#helpBtn").addEventListener("click", e => { e.stopPropagation(); menu.classList.remove("on"); $("#help").classList.toggle("on"); });
+  document.addEventListener("click", e => {
+    if (!e.target.closest("#help")) $("#help").classList.remove("on");
+    if (!e.target.closest("#folderMenu")) menu.classList.remove("on");
+  });
   scroller.addEventListener("mousedown", e => { if (e.target === scroller || e.target === stack) { e.preventDefault(); src.focus(); } });
   window.addEventListener("resize", recompute);
   window.addEventListener("beforeunload", flush);
@@ -363,19 +421,27 @@
     "5 km to miles",
   ].join("\n");
 
+  // Show the sheets of one folder. An empty folder gets one sheet: the example the very
+  // first time Tally runs, a blank one when switching to a new folder.
+  async function show(data, firstText) {
+    const list = (data.sheets || []).map(s => ({ name: s.name, text: s.text || "", created: s.created || "" }));
+    if (!list.length) {
+      const c = await store.create(today());
+      list.push({ name: c.name, text: firstText, created: c.created });
+      if (firstText) await store.save(c.name, firstText);
+    }
+    // only now replace the page's state, so a failure above leaves the old folder working
+    folder = data.folder || ""; recent = data.recent || []; sheets = list;
+    clearTimeout(saveTimer); dirty = false;
+    const i = sheets.findIndex(s => s.name === data.active);
+    active = 0;
+    setStatus();
+    switchTo(i >= 0 ? i : 0);
+  }
+
   (async function start() {
     measure();
     await loadRates();
-    const data = await store.load();
-    folder = data.folder || "";
-    sheets = (data.sheets || []).map(s => ({ name: s.name, text: s.text || "", created: s.created || "" }));
-    if (!sheets.length) {
-      const c = await store.create(today());
-      sheets.push({ name: c.name, text: SAMPLE, created: c.created });
-      await store.save(c.name, SAMPLE);
-    }
-    const i = sheets.findIndex(s => s.name === data.active);
-    setStatus();
-    switchTo(i >= 0 ? i : 0);
+    await show(await store.load(), SAMPLE);
   })().catch(e => { statusEl.textContent = "Could not load sheets: " + e; });
 })();

@@ -1,6 +1,7 @@
 // Tally: a small local calculator notepad with tabs, in a native WebView2 window.
 //
-// Each tab is a plain .txt file in Documents\Tally, so sheets survive anything that
+// Each tab is a plain .txt file in the sheets folder (Documents\Tally unless another
+// folder was chosen; the last one used is remembered), so sheets survive anything that
 // happens to the app and can be opened in any editor. Closing a tab moves its file
 // to Documents\Tally\Trash; nothing is ever deleted. _tabs.json keeps tab order and
 // the active tab.
@@ -46,9 +47,10 @@ type tabState struct {
 }
 
 type loadResult struct {
-	Sheets []sheet `json:"sheets"`
-	Active string  `json:"active"`
-	Folder string  `json:"folder"`
+	Sheets []sheet  `json:"sheets"`
+	Active string   `json:"active"`
+	Folder string   `json:"folder"`
+	Recent []string `json:"recent"` // folders to switch between, the current one first
 }
 
 var (
@@ -73,9 +75,17 @@ func main() {
 	local, _ := os.UserCacheDir()
 	stateDir := filepath.Join(local, "Tally")
 	os.MkdirAll(stateDir, 0o755)
+	// The lock, window position and settings are keyed to the default folder, not the one
+	// in use, so switching folders never lets a second copy open.
 	key := folderKey(dir)
+	settingsFile = filepath.Join(stateDir, "settings-"+key+".json")
 	if !firstInstance(stateDir, key) {
 		return // Tally is already open on this folder; that window has been brought forward
+	}
+	if last := readSettings().Folder; last != "" && isDir(last) && holdFolder(last) {
+		dir = last
+	} else {
+		holdFolder(dir)
 	}
 
 	sub, _ := fs.Sub(webFS, "web")
@@ -108,6 +118,7 @@ func main() {
 	}
 	defer w.Destroy()
 	hwnd := uintptr(w.Window())
+	mainWindow = hwnd
 	styleTitleBar(hwnd, dark)
 
 	// Reopen where it was left (only if that spot is still on a monitor), keep tracking it,
@@ -123,7 +134,14 @@ func main() {
 	w.Bind("tallyRename", rename)
 	w.Bind("tallyTrash", trash)
 	w.Bind("tallyOrder", order)
-	w.Bind("tallyOpenFolder", func() { exec.Command("explorer.exe", dir).Start() })
+	w.Bind("tallyOpenFolder", func() {
+		mu.Lock()
+		d := dir
+		mu.Unlock()
+		exec.Command("explorer.exe", d).Start()
+	})
+	w.Bind("tallyChooseFolder", chooseFolder)
+	w.Bind("tallyUseFolder", useFolder)
 
 	// Exchange rates: the page asks for whatever is cached, and a background fetch refreshes
 	// the cache and tells the page when newer rates arrive. The window never waits on the network.
@@ -206,9 +224,20 @@ func writeAtomic(p string, b []byte) error {
 func load() (loadResult, error) {
 	mu.Lock()
 	defer mu.Unlock()
-	files, err := filepath.Glob(filepath.Join(dir, "*.txt"))
+	return loadLocked()
+}
+
+// loadLocked reads the sheets in dir; callers hold mu.
+func loadLocked() (loadResult, error) {
+	entries, err := os.ReadDir(dir) // not filepath.Glob, which reads [ ] in a folder name as a pattern
 	if err != nil {
 		return loadResult{}, err
+	}
+	var files []string
+	for _, e := range entries {
+		if !e.IsDir() && strings.HasSuffix(e.Name(), ".txt") {
+			files = append(files, filepath.Join(dir, e.Name()))
+		}
 	}
 	st := readState()
 	rank := map[string]int{}
@@ -252,7 +281,7 @@ func load() (loadResult, error) {
 			return out[i].Name < out[j].Name
 		}
 	})
-	return loadResult{Sheets: out, Active: st.Active, Folder: dir}, nil
+	return loadResult{Sheets: out, Active: st.Active, Folder: dir, Recent: recentFolders()}, nil
 }
 
 func save(name, text string) error {

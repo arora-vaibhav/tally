@@ -42,8 +42,10 @@ If a line uses a name you have not defined yet, such as `occ * prev` before `occ
 
 - New sheets are named by date, `2026-10-14`, then `2026-10-14 (2)` for a second one that day. Double-click a tab to rename it; hover to see when it was created.
 - Each sheet is a `.txt` file in `Documents\Tally`, so you can back them up, sync the folder, or open them in any editor. Set `TALLY_DIR` to keep them somewhere else.
-- Closing a tab moves its file to `Documents\Tally\Trash`. Nothing is deleted.
+- Tally shows one folder of sheets at a time. Click the folder button to switch between recent folders, or choose another one (Ctrl+O), such as a folder per deal or per month. The picker can also make a new folder. Tally reopens on the folder you used last.
+- Closing a tab moves its file to a `Trash` folder inside the sheets folder. Nothing is deleted.
 - Print / PDF prints the current sheet as a clean two-column page.
+- A long line scrolls sideways under the answers, which always stay at the right edge of the window.
 - The window reopens where you left it, at the same size, unless that spot was on a monitor that is no longer connected; then it opens centred. Launching Tally while it is already open brings the open window forward instead of starting a second copy.
 
 | Shortcut | Action |
@@ -52,6 +54,7 @@ If a line uses a name you have not defined yet, such as `occ * prev` before `occ
 | Ctrl+W | close sheet |
 | Ctrl+Tab, Ctrl+1..9 | switch sheets |
 | Ctrl+P | print or save as PDF |
+| Ctrl+O | choose the sheets folder |
 
 ## Currency rates
 
@@ -74,6 +77,7 @@ Set `GOARCH=amd64` or `GOARCH=arm64` to build for the other architecture. The ic
 How it fits together:
 
 - `main.go` opens a native window with WebView2, serves the page from the embedded `web/` folder, and reads and writes the sheet files.
+- `folder.go` keeps the folder in use and the recent list, and opens the Windows folder picker.
 - `web/engine.js` turns a sheet into one answer per line, on top of [math.js](https://mathjs.org).
 - `web/app.js` and `web/index.html` are the editor, tabs, copying and printing.
 
