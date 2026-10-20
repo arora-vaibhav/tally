@@ -41,6 +41,7 @@ If a line uses a name you have not defined yet, such as `occ * prev` before `occ
 ## Sheets and tabs
 
 - New sheets are named by date, `2026-10-14`, then `2026-10-14 (2)` for a second one that day. Double-click a tab to rename it; hover to see when it was created.
+- Drag a tab to move it, or press Ctrl+Shift+PgUp / PgDn to move the open one. Tabs reopen in the order you left them.
 - Each sheet is a `.txt` file in `Documents\Tally`, so you can back them up, sync the folder, or open them in any editor. Set `TALLY_DIR` to keep them somewhere else.
 - Tally shows one folder of sheets at a time. Click the folder button to switch between recent folders, or choose another one (Ctrl+O), such as a folder per deal or per month. The picker can also make a new folder. Tally reopens on the folder you used last.
 - Closing a tab moves its file to a `Trash` folder inside the sheets folder. Nothing is deleted.
@@ -53,6 +54,7 @@ If a line uses a name you have not defined yet, such as `occ * prev` before `occ
 | Ctrl+T | new sheet |
 | Ctrl+W | close sheet |
 | Ctrl+Tab, Ctrl+1..9 | switch sheets |
+| Ctrl+Shift+PgUp / PgDn | move the open sheet left or right |
 | Ctrl+P | print or save as PDF |
 | Ctrl+O | choose the sheets folder |
 

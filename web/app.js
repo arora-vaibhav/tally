@@ -186,19 +186,47 @@
     else if (x > scroller.scrollLeft + visibleW) scroller.scrollLeft = x - visibleW + 60;
   }
 
+  let dragFrom = -1;
+  // moveSheet puts sheet `from` at position `to`, keeps the same sheet open, and saves the order
+  function moveSheet(from, to) {
+    to = Math.max(0, Math.min(to, sheets.length - 1));
+    if (from === to || from < 0 || from >= sheets.length) return;
+    const open = cur();
+    sheets.splice(to, 0, sheets.splice(from, 1)[0]);
+    active = sheets.indexOf(open);
+    renderTabs(); saveOrder();
+  }
+
   function renderTabs() {
     tabsEl.innerHTML = "";
     sheets.forEach((s, i) => {
       const t = document.createElement("div");
       t.className = "tab" + (i === active ? " active" : "");
-      t.title = [s.name, createdLabel(s.created), "Double-click to rename, middle-click to close"].filter(Boolean).join("\n");
+      t.title = [s.name, createdLabel(s.created), "Drag to reorder, double-click to rename, middle-click to close"].filter(Boolean).join("\n");
       const label = document.createElement("span"); label.className = "t"; label.textContent = s.name;
       const x = document.createElement("span"); x.className = "x"; x.title = "Close";
       x.innerHTML = '<svg viewBox="0 0 16 16" width="10" height="10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>';
       t.append(label, x);
       t.addEventListener("mousedown", e => { if (e.button === 1) { e.preventDefault(); closeSheet(i); } });
       t.addEventListener("click", e => { if (x.contains(e.target)) closeSheet(i); else if (i !== active) switchTo(i); });
-      t.addEventListener("dblclick", e => { if (!x.contains(e.target)) beginRename(i, label); });
+      t.addEventListener("dblclick", e => { if (!x.contains(e.target)) { t.draggable = false; beginRename(i, label); } });
+      // drag a tab onto another to reorder; the line shows which side it lands on
+      t.draggable = true;
+      t.addEventListener("dragstart", e => { dragFrom = i; e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", s.name); });
+      t.addEventListener("dragover", e => {
+        if (dragFrom < 0) return;
+        e.preventDefault();
+        const r = t.getBoundingClientRect(), after = e.clientX > r.left + r.width / 2;
+        t.classList.toggle("drop-before", !after); t.classList.toggle("drop-after", after);
+      });
+      t.addEventListener("dragleave", () => t.classList.remove("drop-before", "drop-after"));
+      t.addEventListener("drop", e => {
+        e.preventDefault();
+        const after = t.classList.contains("drop-after");
+        t.classList.remove("drop-before", "drop-after");
+        if (dragFrom >= 0) moveSheet(dragFrom, i + (after ? 1 : 0) - (dragFrom < i + (after ? 1 : 0) ? 1 : 0));
+      });
+      t.addEventListener("dragend", () => { dragFrom = -1; });
       tabsEl.append(t);
     });
     const a = tabsEl.children[active]; if (a) a.scrollIntoView({ block: "nearest", inline: "nearest" });
@@ -386,6 +414,7 @@
     else if (k === "p") { e.preventDefault(); printSheet(); }
     else if (k === "s") { e.preventDefault(); flush(); toast("Saved"); }
     else if (k === "o") { e.preventDefault(); chooseFolder(); }
+    else if (e.shiftKey && (e.key === "PageUp" || e.key === "PageDown")) { e.preventDefault(); moveSheet(active, active + (e.key === "PageUp" ? -1 : 1)); }
     else if (e.key === "Tab") { e.preventDefault(); switchTo((active + (e.shiftKey ? -1 : 1) + sheets.length) % sheets.length); }
     else if (/^[1-9]$/.test(e.key)) { e.preventDefault(); switchTo(Math.min(+e.key, sheets.length) - 1); }
   });

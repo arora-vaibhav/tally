@@ -47,6 +47,8 @@
     opacity: 0; color: var(--soft); }
   .tab:hover .x, .tab.active .x { opacity: .7; }
   .tab .x:hover { opacity: 1; background: var(--hover); color: var(--ink); }
+  .tab.drop-before { box-shadow: inset 2px 0 0 var(--caret); }
+  .tab.drop-after { box-shadow: inset -2px 0 0 var(--caret); }
   .tab input { font: inherit; color: var(--ink); background: transparent; border: none; outline: none; width: 130px; padding: 0; }
   .icon { width: 28px; height: 28px; border: none; border-radius: 7px; background: transparent; color: var(--soft);
     display: grid; place-items: center; cursor: default; flex: none; transition: background .12s, color .12s; }
@@ -174,6 +176,7 @@
     <tr><td># Heading</td><td>a section title, also resets total</td></tr>
     <tr><td>// comment</td><td>ignored</td></tr>
     <tr><td>Ctrl+T / W / Tab</td><td>new, close, next sheet. Double-click a tab to rename</td></tr>
+    <tr><td>Drag a tab</td><td>reorder; or Ctrl+Shift+PgUp / PgDn. The order is kept</td></tr>
     <tr><td>Ctrl+O</td><td>choose the sheets folder; the folder button switches between recent ones</td></tr>
   </table>
 </div>
