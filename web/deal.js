@@ -92,7 +92,9 @@
     // "Municipales (2026)" / "Municipal (2026)", never the assessment ("Évaluation municipale")
     const municipal = largest(lines, new RegExp(String.raw`(?<!valuation\s)\b(?:taxes\s+)?municipa(?:le?s?|l)\b(?!\s+(?:assessment|evaluation|valuation))(?:\s+tax(?:es)?)?` + YEAR, "i"), 50);
     const school = largest(lines, new RegExp(String.raw`\b(?:taxes\s+)?(?:scolaires?|school)\b(?:\s+tax(?:es)?)?` + YEAR, "i"), 10);
-    L.taxes = municipal || school ? (municipal || 0) + (school || 0)
+    // water is billed as a tax in some towns ("Eau (2026)"); a dated row is a tax, an undated one an expense
+    const water = largest(lines, /(?<![A-Za-zÀ-ÿ])(?:eau|water)(?![A-Za-zÀ-ÿ])(?:\s+tax(?:es)?)?\s*\(?\s*(?:19|20)\d{2}\s*\)?\s*:?/i, 10);
+    L.taxes = municipal || school ? (municipal || 0) + (school || 0) + (water || 0)
       : largest(lines, new RegExp(String.raw`\b(?:real estate taxes|property tax(?:es)?|taxes)\b` + YEAR, "i"), 100);
     L.insurance = largest(lines, /\b(?:assurances?|insurance)\b\s*:?/i, 100);
     let energy = 0;
@@ -104,6 +106,26 @@
       energy += largest(lines, lab, 50) || 0;
     }
     L.energy = energy || null;
+
+    // The other rows of Centris's expense table (snow, garbage, lawn, cleaning), as napkin.py
+    // counts them: each row's yearly figure (the larger of its two), without energy, insurance
+    // or the total.
+    const ENERGY = /[ée]lectricit[ée]|electricity|hydro|chauffage|heating|mazout|gaz|natural gas|[ée]nergie|energy/i;
+    const start = lines.findIndex(l => /^(?:d[ée]penses|expenses)$/i.test(l));
+    if (start >= 0) {
+      const rows = {};
+      for (let i = start + 1; i < lines.length - 1; i++) {
+        if (/^(?:voir plus|see more|localisation|location)$/i.test(lines[i])) break;
+        const v = lines[i + 1].match(ALONE);
+        if (!/\d/.test(lines[i]) && v) {
+          rows[lines[i]] = Math.max(rows[lines[i]] || 0, toNumber(v));
+          i++;
+        }
+      }
+      const other = Object.entries(rows).filter(([k]) => !ENERGY.test(k) && !/assurance|insurance|^total$/i.test(k));
+      L.otherListed = other.reduce((a, [, v]) => a + v, 0) || null;
+      L.otherRows = other.map(([k]) => k.toLowerCase()).join(", ");
+    }
     const y = all.match(/\b(?:ann[ée]e de construction|year built|built(?: in)?|construit en)\b\s*:?\s*\n?\s*((?:18|19|20)\d{2})/i);
     L.year = y ? Number(y[1]) : null;
     const c = all.match(/(?:n[ºo°]\s*centris|centris\s*(?:no\.?|n[ºo°]|#|number)?)\s*:?\s*(\d{7,9})/i);
@@ -121,6 +143,8 @@
       : CITY.test(w) ? ["a regional city", 0.0575] : null;
     const town = L.address.includes(",") ? L.address.split(",").pop() : L.address;
     L.area = area(town) || area(L.address) || area(all.slice(0, 2000)) || ["a small town, or the area is not clear", 0.065];
+    // a Centris page copied without its financial block (which opens with "Voir plus")
+    L.missingFinance = !!L.centris && !L.taxes && !L.energy && !L.insurance;
     // Tally's own lines ("price = 1,475,000") are a sheet, not a listing
     L.isSheet = lines.some(l => /^[A-Za-z_][A-Za-z0-9_]*\s*=(?!=)/.test(l));
     return L;
@@ -150,6 +174,10 @@
     if (!blank) {
       head.push(`// ${L.centris ? "Centris " + L.centris + ", read" : "Read"} from a pasted listing${today ? " on " + today : ""}. Check each figure against the listing.`);
       head.push(`// ${res} residential and ${com} commercial units.${L.unitMix ? " " + L.unitMix : ""}${L.year ? " Built " + L.year + "." : ""}`);
+      if (L.missingFinance) {
+        head.push("// No taxes or expenses came with this paste, so they are guesses below. On Centris, click Voir plus under");
+        head.push("// Détails financiers (See more under Financial details) before copying, then paste again.");
+      }
     } else {
       head.push("// Fill in the figures that are 0; everything below follows them. Assumptions are the Villeray ones.");
     }
@@ -169,7 +197,8 @@
       L.insurance ? `insurance = ${fmt(L.insurance)}   listed insurance` :
         com ? `insurance = ${fmt(res * 1000 + com * 2500)}   insurance, a guess by door` : "insurance = doors * 1,000   insurance, a guess by door",
       L.energy ? `energy = ${fmt(L.energy)}   listed energy` : "energy = doors * 600   common energy, a guess by door",
-      "other = doors * 450   snow, cleaning, admin, other costs",
+      L.otherListed ? `other = max(${fmt(L.otherListed)}, doors * 450)   listed ${L.otherRows}, at least 450 a door`
+        : "other = doors * 450   snow, cleaning, admin, other costs",
       "mgmt = egi * 4%   management",
       "repairs = doors * 1,000   general upkeep",
       "reserve = doors * 350   replacement reserve",

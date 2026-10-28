@@ -119,6 +119,94 @@ for (const [lang, text] of [["French", centrisFr], ["English", centrisEn]]) {
   check("every calculation line has an answer", lines.filter((l, i) => /\S/.test(l) && !/^\s*(#|\/\/)/.test(l) && res[i].kind !== "result").length, 0);
 }
 
+// Centris 12761853, an all-commercial Sherbrooke building, copied with its financial block open:
+// water is a tax, snow/garbage/lawn are "other", and the sheet must match napkin.py exactly.
+const galt = `Immeuble à revenus à vendre
+1009Z - 1011Z, Rue Galt Ouest, Sherbrooke (Les Nations)
+995 000 $
++ TPS/TVQ
+Année de construction
+1950
+Nombre d’unités
+Commercial (1), Bureau (2)
+Revenus bruts potentiels
+134 040 $
+Prix
+995 000 $
+Description
+Immeuble commercial avec 3 locaux entièrement occupés et des revenus bruts de 134 639$/année.
+Nº Centris  12761853
+Détails financiers
+ÉVALUATION MUNICIPALE (2026)
+Terrain	512 300 $
+Bâtiment	88 700 $
+Total	601 000 $
+Par année
+Par mois
+Taxes
+Municipales (2026)
+1 016 $
+Scolaires (2025)
+35 $
+Eau (2026)
+14 $
+Total
+1 065 $
+Municipales (2026)
+12 197 $
+Scolaires (2025)
+421 $
+Eau (2026)
+165 $
+Total
+12 783 $
+Dépenses
+Électricité
+1 194 $
+Gaz
+750 $
+Déneigement
+292 $
+Ordures
+260 $
+Pelouse
+60 $
+Total
+2 556 $
+Électricité
+14 331 $
+Gaz
+9 001 $
+Déneigement
+3 501 $
+Ordures
+3 118 $
+Pelouse
+719 $
+Total
+30 670 $
+Voir plus
+Localisation`;
+{
+  const L = readListing(galt);
+  check("Galt taxes include water", L.taxes, 12783);
+  check("Galt energy is electricity and gas", L.energy, 23332);
+  check("Galt other listed expenses", L.otherListed, 7338);
+  check("Galt is all commercial", [L.res, L.com], [0, 3]);
+  check("Galt is a regional city", L.area[0], "a regional city");
+  const sheet = dealSheet(L), lines = sheet.split("\n"), res = evaluateSheet(sheet);
+  for (const [name, napkin] of [["noi", 67241], ["value", 1034484], ["loan", 646750], ["maxprice", 1163148], ["equity", 376110]]) {
+    const i = lines.findIndex(l => l.startsWith(name + " = ")), got = Math.round(Number(res[i].value)), ok = Math.abs(got - napkin) <= 1;
+    if (!ok) fail++;
+    console.log(`${ok ? "ok  " : "FAIL"} Galt sheet ${name}: ${got}${ok ? "" : "  napkin.py gave " + napkin}`);
+  }
+  // the same page copied without opening "Voir plus": no taxes or expenses, and the sheet says so
+  const bare = readListing(galt.slice(0, galt.indexOf("Par année")) + "Voir plus\nLocalisation");
+  check("Galt without the financial block is flagged", bare.missingFinance, true);
+  check("and the sheet says to open Voir plus", /click Voir plus/.test(dealSheet(bare)), true);
+  check("a full paste is not flagged", L.missingFinance, false);
+}
+
 // A broker email, in the style of the KW St-Roch listing.
 {
   const L = readListing(`403-409 Rue St-Roch, Montréal
