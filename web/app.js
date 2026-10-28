@@ -111,7 +111,9 @@
 
   // ---- highlighting ----------------------------------------------------
   const esc = s => s.replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
-  const KW = new Set(["of", "on", "off", "as", "to", "in", "x", "prev", "pr", "ans", "total", "sum"]);
+  const KW = new Set(["of", "on", "off", "as", "to", "in", "x", "prev", "pr", "ans", "total", "sum",
+    "at", "over", "years", "year", "yrs", "months", "month", "balance", "after", "interest", "only",
+    "dscr", "debt", "constant", "compounded", "semi", "annually", "monthly"]);
   const TOKEN = /(\d[\d,]*(?:\.\d+)?(?:[kKMB](?![A-Za-z]))?%?)|([A-Za-z_][A-Za-z0-9_]*)|([+\-*\/^×÷=%()])|(\$)|(\s+)|(.)/g;
 
   function colourExpr(s, unknown) {

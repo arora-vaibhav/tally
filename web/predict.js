@@ -15,6 +15,7 @@
   // Tally's own words and the units and currencies people type most; completed from 2 letters.
   // Order breaks ties, so the real-estate units come before the maths functions (sqft before sqrt).
   const WORDS = ["total", "prev", "of", "off", "on", "as", "to", "in",
+    "over", "balance", "after", "interest", "only", "dscr", "constant", "compounded",
     "months", "month", "years", "year", "weeks", "days", "hours", "minutes",
     "sqft", "sqm", "acres", "hectares", "miles", "km", "meters", "feet", "inches", "kg", "lb", "liters", "gallons",
     "sqrt", "round",

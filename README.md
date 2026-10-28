@@ -36,7 +36,14 @@ The builds are not code-signed, so the first time you run one Windows SmartScree
 | `5 km to miles` | units: length, area, volume, weight, time, temperature and more |
 | `100 USD to CAD` | currencies; also `€50 in CAD` and `2,500 CAD + 300 USD` |
 | `# Heading` | a section title, which also starts a new `total` |
+| `3.2M at 4.75% over 25 years` | the monthly payment on a loan |
+| `debt at 4.75% over 25 years balance after 10 years` | the balance left at renewal |
+| `debt at 4.75% interest only` | the monthly interest |
+| `noi at 1.25 DSCR, 4.75% over 25 years` | the largest loan that NOI carries at that debt cover |
+| `debt constant at 4.75% over 25 years` | the yearly payment per dollar borrowed (6.84%) |
 | `// comment` | ignored |
+
+Loans compound monthly, the usual US convention and what `4.75% over 25 years` gives on most calculators (a 6.84% debt constant). Canadian fixed-rate mortgages compound semi-annually: end the line with `compounded semi-annually` (`annually`, `quarterly` and `monthly` work too). Amounts can be names, sums or currencies (`price - 10% at 5% over 25 years`, `3M CAD at 5% over 25 years`), `over 300 months` works as well as years, and a rate typed without the % sign is still a percent (`at 4.75`, `at 0.5`). A line Tally cannot read as a loan, such as one with an unknown compounding, shows no answer rather than a wrong one.
 
 Commas in numbers are fine. `$` on its own is treated as a plain number, since it can mean more than one currency; write the code (`USD`, `CAD`) when it matters. Click any answer to copy it.
 

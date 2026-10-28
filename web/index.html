@@ -107,13 +107,13 @@
   #folderMenu .item .path { color: var(--faint); overflow: hidden; text-overflow: ellipsis; min-width: 0; }
   #folderMenu .label { padding: 4px 10px 2px 30px; font-size: 11px; color: var(--faint); }
   #folderMenu hr { border: none; border-top: 1px solid var(--line); margin: 5px 4px; }
-  #help { position: fixed; top: 46px; right: 14px; width: 340px; background: var(--bg); color: var(--ink); border: 1px solid var(--line);
+  #help { position: fixed; top: 46px; right: 14px; width: min(560px, calc(100vw - 28px)); max-height: calc(100vh - 60px); overflow-y: auto; background: var(--bg); color: var(--ink); border: 1px solid var(--line);
     border-radius: 10px; box-shadow: 0 12px 40px rgba(0,0,0,.35); padding: 14px 16px; font-size: 12.5px; display: none; z-index: 5; }
   #help.on { display: block; }
   #help h3 { margin: 0 0 8px; font-size: 13px; }
   #help table { border-collapse: collapse; width: 100%; }
   #help td { padding: 3px 0; vertical-align: top; }
-  #help td:first-child { font-family: var(--mono); color: var(--kw); padding-right: 12px; white-space: nowrap; }
+  #help td:first-child { font-family: var(--mono); color: var(--kw); padding-right: 14px; width: 46%; }
 
   #printArea { display: none; }
   @media print {
@@ -182,6 +182,10 @@
     <tr><td>5 km to miles</td><td>units: kg, lb, ft, m2, sqft, l, gal, hours...</td></tr>
     <tr><td>100 USD to CAD</td><td>also &euro;50 in CAD, 2,500 CAD + 300 USD. Daily ECB rates; $ alone stays a plain number</td></tr>
     <tr><td># Heading</td><td>a section title, also resets total</td></tr>
+    <tr><td>3.2M at 4.75% over 25 years</td><td>monthly payment; add "balance after 10 years" for the balance at renewal, or "compounded semi-annually" for a Canadian fixed term</td></tr>
+    <tr><td>3.2M at 4.75% interest only</td><td>monthly interest</td></tr>
+    <tr><td>noi at 1.25 DSCR, 4.75% over 25 years</td><td>the largest loan that NOI carries</td></tr>
+    <tr><td>debt constant at 4.75% over 25 years</td><td>yearly payment per dollar borrowed</td></tr>
     <tr><td>// comment</td><td>ignored</td></tr>
     <tr><td>Ctrl+T / W / Tab</td><td>new, close, next sheet. Double-click a tab to rename</td></tr>
     <tr><td>Drag a tab</td><td>reorder; or Ctrl+Shift+PgUp / PgDn. The order is kept</td></tr>

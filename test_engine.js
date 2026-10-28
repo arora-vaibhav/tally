@@ -99,5 +99,89 @@ const want = ["heading", "657,216", "624,355.2", "387,100.22", "7,038,185.89", "
 const ok = JSON.stringify(res) === JSON.stringify(want);
 if (!ok) fail++;
 console.log((ok ? "ok   " : "FAIL ") + "sheet -> " + JSON.stringify(res));
+// Loans, checked against a month-by-month amortisation rather than the closed-form maths.
+{
+  const amortise = (loan, rate, years, perYear, months) => {
+    const i = Math.pow(1 + rate / perYear, perYear / 12) - 1;
+    let lo = 0, hi = loan; // find the payment that clears the loan in years*12 months
+    for (let k = 0; k < 200; k++) {
+      const p = (lo + hi) / 2;
+      let b = loan;
+      for (let m = 0; m < years * 12; m++) b = b * (1 + i) - p;
+      if (b > 0) lo = p; else hi = p;
+    }
+    let b = loan;
+    for (let m = 0; m < months; m++) b = b * (1 + i) - lo;
+    return { pay: lo, bal: b };
+  };
+  const num = s => Number(String(s).replace(/[,%]/g, ""));
+  const sheet = [
+    "debt = 3,731,250",
+    "debt at 4.75% over 25 years",
+    "debt at 4.75% over 25 years compounded semi-annually",
+    "debt at 4.75% over 25 years balance after 10 years",
+    "debt at 4.75 over 300 months",
+    "debt at 4.75% interest only",
+    "k = debt constant at 4.75% over 25 years",
+    "385,913 at 1.25 DSCR, 4.75% over 25 years   max loan",
+    "noi = 385,913",
+    "noi at 1.25x dscr at 4.75% over 25 years",
+    "noi / 1.25 / k",
+    "pmt = 1M at 6% over 30 years",
+    "pmt * 12",
+  ].join("\n");
+  const r = evaluateSheet(sheet).map(x => x.kind === "result" ? x : { display: x.kind });
+  const us = amortise(3731250, 0.0475, 25, 12, 120), ca = amortise(3731250, 0.0475, 25, 2, 0);
+  const checks = [
+    ["monthly payment", num(r[1].display), us.pay],
+    ["Canadian semi-annual payment", num(r[2].display), ca.pay],
+    ["balance after 10 years", num(r[3].display), us.bal],
+    ["300 months is 25 years", num(r[4].display), us.pay],
+    ["interest only", num(r[5].display), 3731250 * 0.0475 / 12],
+    ["debt constant shown as a percent", num(r[6].display), 6.84],
+    ["DSCR sizing", num(r[7].display), 385913 / 1.25 / (12 * amortise(1, 0.0475, 25, 12, 0).pay)],
+    ["DSCR sizing with names and 1.25x", num(r[9].display), num(r[7].display)],
+    ["a named constant stays a fraction", num(r[10].display), num(r[7].display)],
+    ["named payment reused", num(r[12].display), 12 * amortise(1e6, 0.06, 30, 12, 0).pay],
+  ];
+  for (const [what, got, want] of checks) {
+    const ok = Math.abs(got - want) <= Math.max(0.01, Math.abs(want) * 1e-6) || (what.includes("percent") && Math.abs(got - want) < 0.005);
+    if (!ok) fail++;
+    console.log(`${ok ? "ok  " : "FAIL"} loan: ${what}: ${got}${ok ? "" : "  want " + want}`);
+  }
+  if (r[7].note !== "max loan") { fail++; console.log("FAIL loan: a note after a loan phrase should stay a note"); }
+  // review fixes for 1.5: each line with the answer it must give
+  const ui = s => evaluateSheet(s).map(x => x.kind === "result" ? x.display : x.kind === "unknown" ? "? " + x.names.join(",") : x.kind);
+  const last = s => ui(s).pop();
+  const D = "debt = 3,731,250\n";
+  for (const [sheet, want] of [
+    [D + "interest = 14,000\ndebt at 4.75% interest only", "14,769.53"],          // a sheet's own "interest" does not hide the maths
+    [D + "payment = 100\ndebt at 4.75% over 25 years", "21,272.5"],
+    [D + "balance = 100\ndebt at 4.75% over 25 years balance after 10 years", "2,734,845.87"],
+    ["3.2M at 4.75% over 25 years interest only", "12,666.67"],                  // a term does not turn interest-only into P&I
+    [D + "debt at 4.75% over 25 years compounded semi annually", "21,173.19"],
+    [D + "debt at 4.75% over 25 years compounded semi-annual", "21,173.19"],
+    [D + "debt at 4.75% over 25 years compounded fortnightly", "note"],         // no answer beats a wrong one
+    [D + "debt at 4.75% interest only compounded semi-annually", "14,625.46"],
+    [D + "debt at 4.75% over 25 years balance after 10", "2,734,845.87"],
+    [D + "debt at 4.75% over 25 years balance in 10 years", "2,734,845.87"],
+    [D + "debt at 4.75% over 25 years balance after 30 years", "0"],
+    [D + "debt at 4.75% amortized over 25 years", "21,272.5"],
+    ["1M at 0.5 over 25 years", "3,546.7"],                                      // a bare rate is a percent, even under 1
+    ["noi = 385,913\nnoi at 1.25 x DSCR, 4.75% over 25 years", "4,512,673.19"],
+    ["4M - 10% at 5% over 25 years", "21,045.24"],                               // percent maths inside the amount
+    ["4M + 10% at 5% interest only", "18,333.33"],
+    ["balance * 1.05\nbalance = 10", "10"],
+  ]) {
+    const got = last(sheet), ok = got === want;
+    if (!ok) fail++;
+    console.log(`${ok ? "ok  " : "FAIL"} loan: ${JSON.stringify(sheet.split("\n").pop())} -> ${got}${ok ? "" : "  want " + want}`);
+  }
+  if (ui("balance * 1.05\nbalance = 10")[0] !== "? balance") { fail++; console.log("FAIL loan: an undefined 'balance' should still get the ? hint"); }
+
+  // the napkin sheets' hard-coded debt constant at 4.75% over 25 years
+  if (Math.abs(12 * amortise(1, 0.0475, 25, 12, 0).pay - 0.06842) > 0.00005) { fail++; console.log("FAIL loan: monthly compounding should match the 0.06842 debt constant"); }
+}
+
 console.log(fail ? `${fail} FAILED` : "ALL PASS");
 process.exit(fail ? 1 : 0);
