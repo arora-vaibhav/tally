@@ -83,6 +83,10 @@
   .v  { color: var(--var); }
   .n, .c { color: var(--note); }
   .hint { color: var(--faint); }
+  .ghost { color: var(--faint); }
+  #help label { display: flex; align-items: center; gap: 8px; margin-top: 6px; color: var(--soft); }
+  #help label input { margin: 0; accent-color: var(--kw); }
+  #help .opts { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
 
   /* ---- status line ---- */
   #update { color: var(--res); cursor: pointer; padding: 2px 8px; border-radius: 6px; }
@@ -171,6 +175,7 @@
     <tr><td>28 x 1,950 x 12  rent</td><td>words after the maths are a note</td></tr>
     <tr><td>rent = 28 x 1950</td><td>name a result, reuse it below</td></tr>
     <tr><td>prev &nbsp;or&nbsp; Tab</td><td>the previous answer</td></tr>
+    <tr><td>Tab &nbsp;or&nbsp; &rarr;</td><td>take the faint suggestion after the caret; Esc hides it</td></tr>
     <tr><td>total</td><td>sum of the answers above, up to a blank line</td></tr>
     <tr><td>20% of 4,500</td><td>also 4,500 + 15%, 15% off 200, 30 as % of 120</td></tr>
     <tr><td>5k, 2.5M</td><td>thousands, millions</td></tr>
@@ -182,6 +187,10 @@
     <tr><td>Drag a tab</td><td>reorder; or Ctrl+Shift+PgUp / PgDn. The order is kept</td></tr>
     <tr><td>Ctrl+O</td><td>choose the sheets folder; the folder button switches between recent ones</td></tr>
   </table>
+  <div class="opts">
+    <label><input type="checkbox" id="predictOn"> Suggest as I type</label>
+    <label><input type="checkbox" id="predictOthers"> Also learn from the other sheets in this folder</label>
+  </div>
   <div id="version"></div>
 </div>
 <div id="folderMenu"></div>
@@ -190,6 +199,7 @@
 
 <script src="math.js"></script>
 <script src="engine.js"></script>
+<script src="predict.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

@@ -57,6 +57,12 @@
   };
   let active = 0;
   let results = [];
+  // Predictions: the faint text after the caret (see predict.js). Settings live in this
+  // window's own storage; they are conveniences, so a failed read just means the defaults.
+  let ghost = "", ghostLine = -1, othersIx = null;
+  const setting = (k, dflt) => { try { const v = localStorage.getItem("tally." + k); return v === null ? dflt : v === "1"; } catch (e) { return dflt; } };
+  const remember = (k, on) => { try { localStorage.setItem("tally." + k, on ? "1" : "0"); } catch (e) {} };
+  let predictOn = setting("predict", true), predictOthers = setting("predictOthers", true);
   let folder = "";
   let recent = [];      // sheets folders to switch between, the current one first
   let saveTimer = null, dirty = false;
@@ -155,7 +161,8 @@
     results = window.TallyEngine.evaluateSheet(text);
     const lines = text.split("\n");
 
-    hl.innerHTML = lines.map((l, i) => colourLine(l, results[i])).join("\n") + "\n" +
+    hl.innerHTML = lines.map((l, i) => colourLine(l, results[i]) +
+      (i === ghostLine && ghost ? `<span class="ghost">${esc(ghost)}</span>` : "")).join("\n") + "\n" +
       (text.trim() ? "" : `<span class="hint">Type a calculation, e.g.  28 x 1,950 x 12  gross rent</span>`);
 
     let widest = 0;
@@ -240,6 +247,7 @@
     active = i;
     src.value = cur().text;
     scroller.scrollTop = 0; scroller.scrollLeft = 0;
+    indexOthers(); ghost = ""; ghostLine = -1;
     renderTabs(); recompute(); saveOrder();
     document.title = cur().name + " - Tally";
     // always open at the top with the caret at the end; the view follows the caret once you type or move.
@@ -368,6 +376,11 @@
     if (dirty) { toast("This sheet could not be saved, so Tally did not restart"); return; }
     try { await window.tallyRestart(); } catch (e) { toast("Could not restart: " + e); }
   });
+  const pOn = $("#predictOn"), pOthers = $("#predictOthers");
+  pOn.checked = predictOn; pOthers.checked = predictOthers; pOthers.disabled = !predictOn;
+  pOn.addEventListener("change", () => { predictOn = pOn.checked; remember("predict", predictOn); pOthers.disabled = !predictOn; predict(); recompute(); });
+  pOthers.addEventListener("change", () => { predictOthers = pOthers.checked; remember("predictOthers", predictOthers); indexOthers(); });
+
   if (native) window.tallyVersion().then(v => { $("#version").textContent = "Tally " + (v === "dev" ? "development build" : v.replace(/^v/, "")); }).catch(() => {});
 
   function renderFolderMenu() {
@@ -398,20 +411,78 @@
     return "";
   }
 
-  function onInput() {
+  function indexOthers() {
+    othersIx = predictOthers && window.TallyPredict ?
+      window.TallyPredict.index(sheets.filter((s, i) => i !== active).flatMap(s => s.text.split("\n"))) : null;
+  }
+
+  // predict sets the faint suggestion for the caret, shown only when the caret sits at the end
+  // of its line with nothing selected (mid-line it would push the rest of the line out of step).
+  function predict() {
+    ghost = ""; ghostLine = -1;
+    const v = src.value, at = src.selectionEnd;
+    if (!predictOn || !window.TallyPredict || src.selectionStart !== at || (at < v.length && v[at] !== "\n")) return;
+    const start = v.lastIndexOf("\n", at - 1) + 1;
+    const lines = v.split("\n"), line = v.slice(0, start).split("\n").length - 1;
+    const here = window.TallyPredict.index(lines.filter((l, i) => i !== line));
+    ghost = window.TallyPredict.suggest(v.slice(start, at), here, othersIx);
+    if (ghost) { ghostLine = line; ghostAt = at; ghostOf = v; }
+  }
+
+  // A suggestion only stands while the caret is exactly where it was made, with nothing
+  // selected and the text unchanged; anything else (Ctrl+A, a held arrow key) drops it.
+  let ghostAt = -1, ghostOf = "";
+  const ghostHolds = () => ghost && src.selectionStart === ghostAt && src.selectionEnd === ghostAt && src.value === ghostOf;
+
+  function clearGhost() {
+    if (!ghost) return;
+    ghost = ""; ghostLine = -1;
+    recompute();
+  }
+  document.addEventListener("selectionchange", () => { if (ghost && !ghostHolds()) clearGhost(); });
+
+  // type puts text at the caret the way typing does, so Ctrl+Z takes it back
+  function type(t) {
+    src.focus({ preventScroll: true });
+    if (!document.execCommand("insertText", false, t)) { // fires input, which runs onInput
+      src.setRangeText(t, src.selectionStart, src.selectionEnd, "end");
+      onInput({ inputType: "insertText" });
+    }
+  }
+
+  function acceptGhost() {
+    const g = ghost;
+    ghost = ""; ghostLine = -1;
+    type(g);
+  }
+
+  function onInput(e) {
     cur().text = src.value;
+    if (e && e.inputType && e.inputType.startsWith("delete")) { ghost = ""; ghostLine = -1; } // no guessing while you delete
+    else predict();
     recompute(); scheduleSave(); keepCaretVisible();
   }
 
   src.addEventListener("input", onInput);
-  src.addEventListener("keyup", e => { if (e.key.startsWith("Arrow") || e.key === "Home" || e.key === "End" || e.key.startsWith("Page")) keepCaretVisible(); });
-  src.addEventListener("click", keepCaretVisible);
+  src.addEventListener("keyup", e => { if (e.key.startsWith("Arrow") || e.key === "Home" || e.key === "End" || e.key.startsWith("Page")) { clearGhost(); keepCaretVisible(); } });
+  src.addEventListener("click", () => { clearGhost(); keepCaretVisible(); });
+  src.addEventListener("blur", clearGhost);
   src.addEventListener("scroll", () => { src.scrollTop = 0; src.scrollLeft = 0; }); // the outer pane scrolls, never the textarea
   src.addEventListener("keydown", e => {
-    if (e.key === "Tab" && !e.ctrlKey && !e.altKey) {
+    if (ghost && !ghostHolds()) clearGhost();
+    const plain = !e.ctrlKey && !e.altKey && !e.shiftKey && !e.isComposing;
+    // Tab or Right takes the suggestion; with none showing, Tab inserts the previous answer
+    if (ghost && plain && (e.key === "Tab" || e.key === "ArrowRight")) {
       e.preventDefault();
-      src.setRangeText(previousAnswerRaw() || "    ", src.selectionStart, src.selectionEnd, "end");
-      onInput();
+      acceptGhost();
+    } else if (ghost && e.key === "Escape") {
+      e.stopPropagation();
+      clearGhost();
+    } else if (e.key === "Tab" && !e.ctrlKey && !e.altKey) {
+      e.preventDefault();
+      type(previousAnswerRaw() || "    ");
+    } else if (ghost && (e.key.startsWith("Arrow") || e.key === "Home" || e.key === "End" || e.key.startsWith("Page"))) {
+      clearGhost(); // the caret is about to move away from the suggestion
     }
   });
 
