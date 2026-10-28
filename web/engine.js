@@ -171,6 +171,7 @@
     return m ? m[2] : s;
   }
 
+  const NO_ANSWER = {};
   function tryEval(expr, scope) {
     try {
       const node = math.parse(expr);
@@ -178,7 +179,7 @@
       if (node.type === "SymbolNode" && !(node.name in scope)) return undefined;
       const v = node.evaluate(scope);
       if (typeof v === "function" || v === undefined || v === null) return undefined;
-      if (typeof v === "number" && !isFinite(v)) return undefined;
+      if (typeof v === "number" && !isFinite(v)) return NO_ANSWER; // 5 / 0: a sum with no answer, not a note
       if (v && v.isResultSet) return v.entries.length ? v.entries[v.entries.length - 1] : undefined;
       return v;
     } catch (e) {
@@ -198,6 +199,7 @@
       if (loan && loan.bad) return null;
       const pct = loan ? { expr: loan.expr, asPercent: loan.asPercent } : percentages(head);
       const v = tryEval(pct.expr, scope);
+      if (v === NO_ANSWER) return null; // shorter heads would answer "price / 0" with the price
       if (v !== undefined) return { value: v, asPercent: pct.asPercent, note: words.slice(end).join("").trim() };
     }
     return null;

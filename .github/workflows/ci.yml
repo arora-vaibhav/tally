@@ -24,7 +24,7 @@ jobs:
           go-version-file: go.mod
 
       - name: Engine and prediction tests
-        run: node test_engine.js && node test_predict.js
+        run: node test_engine.js && node test_predict.js && node test_deal.js
 
       - name: Storage tests
         run: go test ./...

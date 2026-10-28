@@ -49,6 +49,14 @@ Commas in numbers are fine. `$` on its own is treated as a plain number, since i
 
 If a line uses a name you have not defined yet, such as `occ * prev` before `occ = 95%`, the name is underlined and the answer column shows `? occ` instead of staying blank. A word straight after a number (`15% tip`) is still just a note.
 
+## Deal sheets
+
+A deal sheet is the napkin Fox uses to screen a building: price, doors and rents at the top, then vacancy, expenses, NOI, value at the market cap, the conventional loan (the smaller of the LTV and DSCR loans), cash to close, cash on cash and the price that works. Every line is named and wired, so changing one figure moves everything below it. The assumptions are written into the sheet: vacancy 3% (4% with commercial, 5% when mostly commercial), management 4%, repairs 1,000 and reserve 350 a door, other costs 450 a door, 4.75% over 25 years at 1.25x DSCR and 75% LTV, welcome tax by price band and 1% closing costs.
+
+- **Paste a listing.** Copy a Centris page (French or English) or a broker's email or PDF text and paste it into Tally. It reads the price, units, potential gross revenue, taxes, insurance, energy, year built and address, and makes a deal sheet from them: in the open sheet if it is empty, otherwise in a new tab named after the address. Figures the listing does not give are guessed the napkin way and say so. Centris shows taxes and expenses per month and per year; the sheet uses the year. Check each figure against the listing; Ctrl+Shift+V pastes the text as it is.
+- **A blank deal.** Ctrl+Shift+T, or Shift+click on +, opens a blank deal sheet with the asking price selected. Type the price, the number of doors and the gross revenue, and the rest fills in.
+- The market cap follows the address: 5% on Montreal island, 5.25% in greater Montreal, 5.75% in a regional city, 6.5% elsewhere, plus a quarter point with retail in the mix.
+
 ## Suggestions as you type
 
 When the cursor is at the end of a line, Tally shows a faint guess at what comes next. Press Tab or the right arrow to take it, Esc to hide it, or just keep typing.
@@ -78,6 +86,7 @@ Suggestions come from the open sheet and, unless you switch it off in the help p
 | Ctrl+Tab, Ctrl+1..9 | switch sheets |
 | Ctrl+Shift+PgUp / PgDn | move the open sheet left or right |
 | Ctrl+P | print or save as PDF |
+| Ctrl+Shift+T | new deal sheet |
 | Ctrl+O | choose the sheets folder |
 
 ## Currency rates
@@ -93,6 +102,7 @@ Needs Go 1.27 or later and Node.js (for the engine tests).
 ```
 node test_engine.js
 node test_predict.js
+node test_deal.js
 go test ./...
 go build -ldflags "-H windowsgui -s -w" -o Tally.exe .
 ```
@@ -110,6 +120,7 @@ How it fits together:
 Releases: push a tag such as `v1.3.0` with the release notes as its message (`git tag -a v1.3.0 -m "..."`). CI builds both architectures with that version stamped in and publishes the installers, the plain builds and their checksums. Installed copies pick it up on their next check. Local builds are `dev` and never update.
 - `web/engine.js` turns a sheet into one answer per line, on top of [math.js](https://mathjs.org).
 - `web/predict.js` works out the suggestion to show after the cursor.
+- `web/deal.js` reads a pasted listing and writes the deal sheet.
 - `web/app.js` and `web/index.html` are the editor, tabs, copying and printing.
 
 ## Licence

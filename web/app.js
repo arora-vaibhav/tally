@@ -261,11 +261,41 @@
   }
 
   // ---- sheet actions ---------------------------------------------------
-  async function newSheet() {
+  async function newSheet(name, text) {
     await flush();
-    const c = await store.create(today());
-    sheets.push({ name: c.name, text: "", created: c.created }); // oldest to newest, left to right
+    const c = await store.create(typeof name === "string" ? name : today());
+    sheets.push({ name: c.name, text: text || "", created: c.created }); // oldest to newest, left to right
+    if (text) await store.save(c.name, text);
     switchTo(sheets.length - 1);
+  }
+
+  // A deal sheet: the napkin template, blank or filled from a pasted listing (deal.js).
+  // The blank one opens with the asking price selected, ready to type over.
+  async function newDeal() {
+    await newSheet(today() + " deal", window.TallyDeal.dealSheet(null));
+    const at = src.value.indexOf("price = 0");
+    if (at >= 0) src.setSelectionRange(at + 8, at + 9);
+  }
+
+  // A pasted listing (Centris, or a broker's email or PDF text) becomes a deal sheet: in this
+  // sheet when it is empty, otherwise in a new one named after the address. Ctrl+Shift+V
+  // pastes the text as it is.
+  let plainPaste = false;
+  async function pasteListing(e) {
+    if (plainPaste || !window.TallyDeal) { plainPaste = false; return; }
+    const text = (e.clipboardData && e.clipboardData.getData("text/plain")) || "";
+    if (text.split("\n").filter(l => l.trim()).length < 3) return;
+    const L = window.TallyDeal.readListing(text);
+    if (!window.TallyDeal.looksLikeListing(L)) return;
+    e.preventDefault();
+    const sheet = window.TallyDeal.dealSheet(L, today());
+    if (!src.value.trim()) {
+      src.select();
+      type(sheet);
+    } else {
+      await newSheet((L.address.split(",").slice(0, 2).join(",") || "Pasted listing").trim(), sheet);
+    }
+    toast("Read the listing into a deal sheet. Ctrl+Shift+V pastes the text as it is");
   }
 
   async function closeSheet(i) {
@@ -470,7 +500,9 @@
   src.addEventListener("click", () => { clearGhost(); keepCaretVisible(); });
   src.addEventListener("blur", clearGhost);
   src.addEventListener("scroll", () => { src.scrollTop = 0; src.scrollLeft = 0; }); // the outer pane scrolls, never the textarea
+  src.addEventListener("paste", pasteListing);
   src.addEventListener("keydown", e => {
+    plainPaste = (e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "v";
     if (ghost && !ghostHolds()) clearGhost();
     const plain = !e.ctrlKey && !e.altKey && !e.shiftKey && !e.isComposing;
     // Tab or Right takes the suggestion; with none showing, Tab inserts the previous answer
@@ -499,7 +531,8 @@
     if (e.key === "Escape") { $("#help").classList.remove("on"); menu.classList.remove("on"); }
     if (!(e.ctrlKey || e.metaKey)) return;
     const k = e.key.toLowerCase();
-    if (k === "t" || k === "n") { e.preventDefault(); newSheet(); }
+    if (k === "t" && e.shiftKey) { e.preventDefault(); newDeal(); }
+    else if (k === "t" || k === "n") { e.preventDefault(); newSheet(); }
     else if (k === "w") { e.preventDefault(); closeSheet(active); }
     else if (k === "p") { e.preventDefault(); printSheet(); }
     else if (k === "s") { e.preventDefault(); flush(); toast("Saved"); }
@@ -509,7 +542,7 @@
     else if (/^[1-9]$/.test(e.key)) { e.preventDefault(); switchTo(Math.min(+e.key, sheets.length) - 1); }
   });
 
-  $("#add").addEventListener("click", newSheet);
+  $("#add").addEventListener("click", e => e.shiftKey ? newDeal() : newSheet());
   $("#copyTable").addEventListener("click", copyTable);
   $("#printBtn").addEventListener("click", printSheet);
   $("#folder").addEventListener("click", e => {

@@ -18,6 +18,8 @@ const cases = [
   ["2 ^ 10", "1,024"],
   ["just a note", null],
   ["sqrt(16)", "4"],
+  ["500 / 0", null],          // no answer, never the 500 before the slash
+  ["500 / 0   per door", null],
 ];
 let fail = 0;
 for (const [line, want, note] of cases) {
