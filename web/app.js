@@ -331,9 +331,23 @@
     if (link) readLink(link); else toast("No link in what was shared", 3000);
   };
 
+  // ask: the app's own yes/no dialog (Enter confirms, Esc cancels), resolves true for yes
+  function ask(question, note) {
+    const d = $("#ask");
+    d.querySelector(".q").textContent = question;
+    d.querySelector(".note").textContent = note || "";
+    d.returnValue = "";
+    d.showModal();
+    d.querySelector(".ok").focus();
+    return new Promise(done => d.addEventListener("close", () => {
+      done(d.returnValue === "yes");
+      src.focus({ preventScroll: true });
+    }, { once: true }));
+  }
+
   async function closeSheet(i) {
     const s = sheets[i];
-    if (s.text.trim() && !confirm(`Close "${s.name}"?\n\nIt moves to the Trash folder inside your sheets folder. Nothing is deleted.`)) return;
+    if (s.text.trim() && !(await ask(`Close "${s.name}"?`, "It moves to the Trash folder inside your sheets folder. Nothing is deleted."))) return;
     await flush();
     await store.trash(s.name);
     sheets.splice(i, 1);

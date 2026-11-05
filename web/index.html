@@ -107,6 +107,16 @@
   #folderMenu .item .path { color: var(--faint); overflow: hidden; text-overflow: ellipsis; min-width: 0; }
   #folderMenu .label { padding: 4px 10px 2px 30px; font-size: 11px; color: var(--faint); }
   #folderMenu hr { border: none; border-top: 1px solid var(--line); margin: 5px 4px; }
+  /* the app's own confirm: a browser confirm() is titled with the page server's address */
+  #ask { border: 1px solid var(--line); border-radius: 12px; background: var(--bg); color: var(--ink); padding: 18px 20px 14px;
+    width: min(380px, calc(100vw - 32px)); box-shadow: 0 16px 48px rgba(0,0,0,.4); font-size: 13px; }
+  #ask::backdrop { background: rgba(0,0,0,.35); }
+  #ask .q { margin: 0 0 6px; font-weight: 600; font-size: 14px; overflow-wrap: anywhere; }
+  #ask .note { margin: 0 0 16px; color: var(--soft); }
+  #ask .btns { display: flex; justify-content: flex-end; gap: 8px; }
+  #ask button { font: inherit; padding: 6px 14px; border-radius: 7px; border: 1px solid var(--line); background: transparent; color: var(--ink); cursor: pointer; }
+  #ask button:hover { background: var(--line); }
+  #ask button.ok { background: var(--ink); color: var(--bg); border-color: transparent; }
   #help { position: fixed; top: 46px; right: 14px; width: min(560px, calc(100vw - 28px)); max-height: calc(100vh - 60px); overflow-y: auto; background: var(--bg); color: var(--ink); border: 1px solid var(--line);
     border-radius: 10px; box-shadow: 0 12px 40px rgba(0,0,0,.35); padding: 14px 16px; font-size: 12.5px; display: none; z-index: 5; }
   #help.on { display: block; }
@@ -223,6 +233,8 @@
 </div>
 <div id="folderMenu"></div>
 <div id="toast"></div>
+<dialog id="ask"><form method="dialog"><p class="q"></p><p class="note"></p>
+  <div class="btns"><button value="no">Cancel</button><button value="yes" class="ok">Close sheet</button></div></form></dialog>
 <div id="printArea"></div>
 
 <script src="math.js"></script>
