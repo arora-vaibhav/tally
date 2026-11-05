@@ -1,0 +1,10 @@
+[
+  { "url": "https://www.royallepagecommercial.com/property/SK028554/419-9th-street-e-prince-albert-sk-s6v-0y1",
+    "want": { "price": 699900, "res": 8, "com": 0, "gross": null, "taxes": null, "year": 1963, "address": "419 9th STREET E, Prince Albert", "source": "Royal LePage Commercial" } },
+  { "url": "https://www.royallepagecommercial.com/fr/property/27438841",
+    "want": { "price": 735000, "res": 5, "taxes": 5357, "year": null, "centris": "27438841", "address": "913 - 921 Rue Labelle, Mont-Tremblant" } },
+  { "url": "https://www.royallepagecommercial.com/property/X13659988",
+    "want": { "price": 1299000, "doors": 0, "gross": null, "taxes": null, "centris": "", "address": "287 ST LAURENT BOULEVARD, Ottawa" } },
+  { "url": "https://www.royallepagecommercial.com/fr/property/20921362",
+    "want": { "price": 745000, "res": 3, "com": 2, "taxes": 10565, "centris": "20921362", "address": "465 - 483 Av. Ste-Anne, Saint-Hyacinthe" } }
+]

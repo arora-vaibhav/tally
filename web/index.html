@@ -115,6 +115,28 @@
   #help td { padding: 3px 0; vertical-align: top; }
   #help td:first-child { font-family: var(--mono); color: var(--kw); padding-right: 14px; width: 46%; }
 
+  /* ---- phone width (the Android app, or a narrow window): bigger touch targets, a narrower
+     answers column, nothing that needs a hover. The results column width is set by app.js,
+     so it is capped here rather than replaced. ---- */
+  @media (max-width: 640px) {
+    body { font-size: 14px; }
+    header { gap: 2px; padding: 6px 6px 4px 6px; }
+    .sep { display: none; }
+    .icon { width: 36px; height: 36px; }
+    .icon svg { width: 18px; height: 18px; }
+    .tab { height: 34px; padding: 0 10px; max-width: 150px; }
+    .tab .x { width: 22px; height: 22px; }
+    #scroll { background-position: right min(var(--resw, 200px), 40vw) top 8px; }
+    #hl, #src { padding: 0 min(var(--resw, 200px), 40vw) 0 12px; }
+    #hl { padding-right: 16px; }
+    #out { width: min(var(--resw, 200px), 40vw); padding-right: 10px; }
+    footer { padding: 0 10px 6px 12px; font-size: 12px; gap: 8px; }
+    footer > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #toast { max-width: calc(100vw - 32px); text-align: center; }
+    #folderMenu, #help { left: 8px; right: 8px; top: 50px; width: auto; min-width: 0; max-width: none; }
+    #folderMenu .item { padding: 10px 10px; }
+  }
+
   #printArea { display: none; }
   @media print {
     /* margin 0 removes the browser's own date, title and URL stamps; the sheet carries its own margins */
@@ -207,6 +229,27 @@
 <script src="engine.js"></script>
 <script src="predict.js"></script>
 <script src="deal.js"></script>
+<script src="links.js"></script>
+<script src="sites/centris.js"></script>
+<script src="sites/avisonyoung.js"></script>
+<script src="sites/buildout.js"></script>
+<script src="sites/cbre.js"></script>
+<script src="sites/colliers.js"></script>
+<script src="sites/crexi.js"></script>
+<script src="sites/cushman.js"></script>
+<script src="sites/duproprio.js"></script>
+<script src="sites/kijiji.js"></script>
+<script src="sites/loopnet.js"></script>
+<script src="sites/marcusmillichap.js"></script>
+<script src="sites/pmml.js"></script>
+<script src="sites/realtor.js"></script>
+<script src="sites/redfin.js"></script>
+<script src="sites/remax.js"></script>
+<script src="sites/remaxquebec.js"></script>
+<script src="sites/royallepage.js"></script>
+<script src="sites/royallepagecommercial.js"></script>
+<script src="sites/spacelist.js"></script>
+<script src="sites/zillow.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

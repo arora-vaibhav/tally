@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- the page's own background, so there is no white flash before it paints -->
+    <color name="page">#f7f7f5</color>
+    <color name="tile">#26282c</color>
+    <style name="Tally" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/page</item>
+    </style>
+</resources>

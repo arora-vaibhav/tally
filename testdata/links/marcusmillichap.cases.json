@@ -1,0 +1,10 @@
+[
+  { "url": "https://www.marcusmillichap.com/properties/202433/323325-329-ontario-st-east",
+    "want": { "price": 4250000, "res": 6, "com": 2, "gross": null, "taxes": null, "year": null, "address": "323 Rue Ontario E, Montréal", "source": "Marcus & Millichap" } },
+  { "url": "https://www.marcusmillichap.com/properties/311784/2402-florian-street-montreal",
+    "want": { "price": null, "doors": 8, "gross": null, "taxes": null, "address": "2402 Rue Florian, Montréal", "source": "Marcus & Millichap" } },
+  { "url": "https://www.marcusmillichap.com/properties/313056/newhall-terrace",
+    "want": { "price": 11500000, "doors": 66, "gross": null, "taxes": null, "year": 1972, "address": "24377 Newhall Ave, Santa Clarita", "source": "Marcus & Millichap" } },
+  { "url": "https://www.marcusmillichap.com/properties/309682/607-timberpine-ave",
+    "want": { "price": 2369000, "doors": 4, "gross": null, "year": 1976, "address": "607 Timberpine Ave, Sunnyvale", "source": "Marcus & Millichap" } }
+]

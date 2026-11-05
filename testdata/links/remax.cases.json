@@ -1,0 +1,8 @@
+[
+  { "url": "https://www.remax.ca/commercial/on/kingston-east-of-sir-john-a-blvd-real-estate/333-335-337-princess-street-wp_idm73000004-30452547-lst",
+    "want": { "price": 6400000, "taxes": 86859.16, "year": null, "unitMix": "", "address": "333/335 337 PRINCESS STREET, KINGSTON (EAST OF SIR JOHN A. BLVD)", "source": "RE/MAX" } },
+  { "url": "https://www.remax.ca/commercial/on/kingston-central-city-east-real-estate/82-94-155-159-brock-st-wellington-st-street-wp_idm73000004-30398673-lst",
+    "want": { "price": 4499900, "doors": 0, "gross": null, "taxes": 85182, "unitMix": "", "address": "82-94 155-159 BROCK ST & WELLINGTON ST. STREET, KINGSTON (CENTRAL CITY EAST)" } },
+  { "url": "https://www.remax.ca/on/hamilton-real-estate/40-century-street-wp_idm73000004-30461170-lst",
+    "want": { "price": 575000, "taxes": 2882, "year": 1900, "address": "40 CENTURY STREET, HAMILTON" } }
+]

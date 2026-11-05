@@ -1,0 +1,12 @@
+[
+  { "url": "https://www.cushmanwakefield.com/en/canada/properties/for-sale/multifamily/ab/vegreville/5333-49-avenue/arlington-place-apartments-s",
+    "want": { "price": 1325000, "doors": 15, "gross": null, "taxes": null, "address": "5333 49 Avenue, Vegreville", "source": "Cushman & Wakefield" } },
+  { "url": "https://www.cushmanwakefield.com/fr-ca/canada/properties/for-sale/multifamily/ab/vegreville/5333-49-avenue/arlington-place-apartments-s",
+    "want": { "price": 1325000, "doors": 15, "gross": null, "taxes": null, "address": "5333 49 Avenue, Vegreville", "source": "Cushman & Wakefield" } },
+  { "url": "https://www.cushmanwakefield.com/en/canada/properties/for-sale/multifamily/ab/edmonton/11006-108-avenue-nw/investment-property-s",
+    "want": { "price": 1800000, "doors": 4, "gross": null, "year": 2017, "address": "11006 108 Avenue NW, Edmonton", "source": "Cushman & Wakefield" } },
+  { "url": "https://www.cushmanwakefield.com/en/canada/properties/for-sale/mixed-use/qc/montreal/403-rue-des-seigneurs/s122211884s122211884-s",
+    "want": { "price": null, "doors": 0, "year": 2029, "address": "403 Rue des Seigneurs, Montreal", "source": "Cushman & Wakefield" } },
+  { "url": "https://multifamily.cushwake.com/Listings/32263",
+    "want": { "price": null, "doors": 242, "gross": null, "year": 1976, "address": "1707 Arrowhead Road, North Little Rock", "source": "Cushman & Wakefield" } }
+]

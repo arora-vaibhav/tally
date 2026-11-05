@@ -1,0 +1,14 @@
+[
+  { "url": "https://www.cbre.ca/properties/commercial-space/details/CA-Plus-442046/4350-4352-rue-saint-denis-montreal?view=isSale",
+    "want": { "price": 2695000, "year": 1932, "gross": null, "taxes": null, "address": "4350-4352 Rue Saint-Denis, Montréal", "source": "CBRE" } },
+  { "url": "https://www.cbre.ca/fr-ca/properties/commercial-space/details/CA-Plus-442046/4350-4352-rue-saint-denis-montreal?view=isSale",
+    "want": { "price": 2695000, "year": 1932, "address": "4350-4352 Rue Saint-Denis, Montréal" } },
+  { "url": "https://www.cbre.ca/properties/commercial-space/details/CA-Plus-435641/12-meadow-lane-sackville?view=isSale",
+    "want": { "price": 1975000, "year": 2013, "address": "12 Meadow Lane, Sackville" } },
+  { "url": "https://www.cbre.ca/properties/commercial-space/details/CA-Plus-417653/1445-west-72nd-avenue-vancouver?view=isSale",
+    "want": { "price": null, "res": 23, "year": 1965, "address": "1445 West 72nd Avenue, Vancouver" } },
+  { "url": "https://www.cbre.com/properties/properties-for-lease/commercial-space/details/US-SMPL-192934/scotia-manor-scotia-ny?view=isSale",
+    "want": { "price": 8100000, "res": 51, "year": 2013, "address": "49 Mohawk Avenue, Scotia" } },
+  { "url": "https://www.cbre.ca/properties/commercial-space/details/CA-Plus-441710/2155-2175-avenue-papineau-montreal?view=isSale",
+    "want": { "res": 0, "com": 0, "doors": 0 } }
+]

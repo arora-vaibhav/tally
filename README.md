@@ -54,8 +54,13 @@ If a line uses a name you have not defined yet, such as `occ * prev` before `occ
 A deal sheet is the napkin Fox uses to screen a building: price, doors and rents at the top, then vacancy, expenses, NOI, value at the market cap, the conventional loan (the smaller of the LTV and DSCR loans), cash to close, cash on cash and the price that works. Every line is named and wired, so changing one figure moves everything below it. The assumptions are written into the sheet: vacancy 3% (4% with commercial, 5% when mostly commercial), management 4%, repairs 1,000 and reserve 350 a door, other costs 450 a door, 4.75% over 25 years at 1.25x DSCR and 75% LTV, welcome tax by price band and 1% closing costs.
 
 - **Paste a listing.** Copy a Centris page (French or English) or a broker's email or PDF text and paste it into Tally. It reads the price, units, potential gross revenue, taxes, insurance, energy, year built and address, and makes a deal sheet from them: in the open sheet if it is empty, otherwise in a new tab named after the address. It needs a price, the number of units and the gross revenue, the same as the napkin; text without all three (notes, a copied sheet) pastes as it is. Figures the listing does not give are guessed the napkin way and say so. Centris shows taxes and expenses per month and per year; the sheet uses the year. Check each figure against the listing; Ctrl+Shift+V pastes the text as it is.
+- **Paste a link.** Paste a listing's web address instead of its text (or, on Android, share the listing to Tally) and Tally fetches the page itself and builds the deal sheet from it. It reads Centris (French and English), PMML, DuProprio, RE/MAX Quebec, RE/MAX Canada, Royal LePage and Royal LePage Commercial, Avison Young, CBRE, Marcus & Millichap, Cushman & Wakefield, Spacelist, Buildout broker pages (such as Macdonald Commercial), Kijiji, Crexi and Zillow, and any other page as text, the way a pasted page is read. Realtor.ca, Colliers, LoopNet, Realtor.com and Redfin refuse apps, so for those Tally says to copy the page and paste the text. What a listing does not give stays a 0 or a guess, as with a paste. Ctrl+Shift+V pastes the link as text.
 - **A blank deal.** Ctrl+Shift+T, or Shift+click on +, opens a blank deal sheet with the asking price selected. Type the price, the number of doors and the gross revenue, and the rest fills in.
 - The market cap follows the address: 5% on Montreal island, 5.25% in greater Montreal, 5.75% in a regional city, 6.5% elsewhere, plus a quarter point with retail in the mix.
+
+## Android
+
+The same Tally runs on Android phones: the page, the maths, the predictions and deal sheets are the same code, in a small app shell (see [android/README.md](android/README.md)). Download `Tally-android.apk` from the [Releases](../../releases) page and open it on the phone (Android asks once to allow installs from your browser). Share a listing from Centris, Chrome or any app to Tally and it becomes a deal sheet. Sheets are plain files on the phone, and the app updates itself from GitHub releases like the Windows one, checking the download against its published SHA-256.
 
 ## Suggestions as you type
 
@@ -93,7 +98,7 @@ Suggestions come from the open sheet and, unless you switch it off in the help p
 
 Rates are the European Central Bank reference rates (about 30 currencies) from [frankfurter.dev](https://frankfurter.dev). Tally fetches them in the background at most every 12 hours and keeps the last set in `%LOCALAPPDATA%\Tally\rates.json`, so conversions still work offline. The status line shows the date of the rates in use. They are reference rates, published once each working day, not the rate your bank will give you.
 
-That rate request and the update check (to api.github.com, then the download from GitHub) are the only things Tally sends over the network. Your sheets never leave your PC.
+That rate request, the update check (to api.github.com, then the download from GitHub) and the listing links you paste are the only things Tally sends over the network. Your sheets never leave your PC.
 
 ## Build from source
 
@@ -103,6 +108,7 @@ Needs Go 1.27 or later and Node.js (for the engine tests).
 node test_engine.js
 node test_predict.js
 node test_deal.js
+node test_links.js        # recorded pages; --live reads the real sites, --record <site> saves them again
 go test ./...
 go build -ldflags "-H windowsgui -s -w" -o Tally.exe .
 ```
@@ -116,6 +122,7 @@ How it fits together:
 - `open.go` opens a sheet file from Explorer, handing it to the open window if there is one.
 - `install.go` is the installer: the same program run as `Tally-Setup-*.exe` (or with `--install`) installs itself; `--uninstall` removes it.
 - `update.go` checks GitHub releases and swaps in a verified newer build.
+- `fetch.go` fetches a pasted listing link for `web/links.js`, which hands it to the site reader in `web/sites/` (one file per site, each with recorded cases in `testdata/links/`).
 
 Releases: push a tag such as `v1.3.0` with the release notes as its message (`git tag -a v1.3.0 -m "..."`). CI builds both architectures with that version stamped in and publishes the installers, the plain builds and their checksums. Installed copies pick it up on their next check. Local builds are `dev` and never update.
 - `web/engine.js` turns a sheet into one answer per line, on top of [math.js](https://mathjs.org).

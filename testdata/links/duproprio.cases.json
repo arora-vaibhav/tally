@@ -1,0 +1,14 @@
+[
+  { "url": "https://duproprio.com/fr/montreal/mercier-hochelaga-maisonneuve/quintuplex-a-vendre/hab-1473-1475-1477-1479-1481-rue-d-1131192",
+    "want": { "price": 1329000, "res": 5, "com": 0, "unitMix": "4 x 3 1/2, 1 x 5 1/2", "gross": 66240, "taxes": 7848.83, "insurance": 4026, "energy": null, "year": 1910, "address": "1473-1475-1477-1479-1481, rue Darling, Mercier / Hochelaga / Maisonneuve", "source": "DuProprio" } },
+  { "url": "https://duproprio.com/fr/monteregie-rive-sud-montreal/chambly/multiplex-a-vendre/hab-1115-rue-benoit-1143251",
+    "want": { "price": 1675000, "res": 6, "com": 0, "gross": 103700, "taxes": 8812, "insurance": 3500, "year": 1982, "address": "1115, Rue Benoit, Chambly", "source": "DuProprio" } },
+  { "url": "https://duproprio.com/en/montreal/le-plateau-mont-royal/multiplex-for-sale/hab-5327-5335-rue-marquette-1141484",
+    "want": { "price": 1460000, "res": 6, "com": 0, "gross": 76644, "taxes": 9424.46, "insurance": 2678.13, "year": 1918, "address": "5327-5335 rue Marquette, Le Plateau-Mont-Royal", "source": "DuProprio" } },
+  { "url": "https://duproprio.com/fr/estrie/sherbrooke-mont-bellevue/multiplex-a-vendre/hab-2-266-rue-gillespie-1143166",
+    "want": { "price": 1529000, "res": 6, "com": 0, "gross": 100380, "taxes": 9384.82, "insurance": 2196.35, "energy": 1509.25, "otherListed": 1527.6, "year": 2014, "address": "2-266, rue gillespie, Sherbrooke (Mont-Bellevue)", "source": "DuProprio" } },
+  { "url": "https://duproprio.com/en/montreal/ahuntsic-cartierville/triplex-for-sale/hab-11481-rue-joseph-casavant-1137050",
+    "want": { "price": 1600000, "res": 3, "com": 0, "unitMix": "", "gross": 46200, "taxes": 6333.58, "energy": 2455, "year": 1961, "address": "11481 rue Joseph-Casavant, Ahuntsic / Cartierville", "source": "DuProprio" } },
+  { "url": "https://duproprio.com/en/montreal/rosemont-la-petite-patrie/commercial-property-for-sale/hab-6794-6794a-6796-rue-saint-hube-1132130",
+    "want": { "price": 1178000, "res": 0, "com": 2, "gross": 101600, "taxes": 19861, "year": 1948, "address": "6794-6794A-6796 rue Saint-Hubert, Rosemont / La Petite Patrie", "source": "DuProprio" } }
+]

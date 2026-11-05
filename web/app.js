@@ -68,9 +68,9 @@
   let saveTimer = null, dirty = false;
   const cur = () => sheets[active];
 
-  function toast(msg) {
+  function toast(msg, ms) {
     const t = $("#toast"); t.textContent = msg; t.classList.add("on");
-    clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("on"), 1400);
+    clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("on"), ms || 1400);
   }
 
   // ---- saving ----------------------------------------------------------
@@ -284,19 +284,52 @@
   async function pasteListing(e) {
     if (plainPaste || !window.TallyDeal) { plainPaste = false; return; }
     const text = (e.clipboardData && e.clipboardData.getData("text/plain")) || "";
+    const link = window.TallyLinks && window.TallyLinks.findLink(text);
+    if (link) { e.preventDefault(); readLink(link); return; }
     if (text.split("\n").filter(l => l.trim()).length < 3) return;
     const L = window.TallyDeal.readListing(text);
     if (!window.TallyDeal.looksLikeListing(L)) return;
     e.preventDefault();
+    await putDeal(L);
+    toast("Read the listing into a deal sheet. Ctrl+Shift+V pastes the text as it is");
+  }
+  // the deal sheet goes in this sheet when it is empty, otherwise in a new one named after the address
+  async function putDeal(L) {
     const sheet = window.TallyDeal.dealSheet(L, today());
     if (!src.value.trim()) {
       src.select();
       type(sheet);
     } else {
-      await newSheet((L.address.split(",").slice(0, 2).join(",") || "Pasted listing").trim(), sheet);
+      await newSheet((L.address.split(",").slice(0, 2).join(",") || (L.source ? L.source + " listing" : "Pasted listing")).trim(), sheet);
     }
-    toast("Read the listing into a deal sheet. Ctrl+Shift+V pastes the text as it is");
   }
+
+  // A listing link (pasted, or shared to Tally on a phone) is fetched by the app and read by
+  // links.js and the site readers in web/sites/. Ctrl+Shift+V pastes the link as text.
+  const fetchPage = (url, opts) => window.tallyFetch ? window.tallyFetch(url, opts || null)
+    : fetch(url, opts || {}).then(async r => ({ status: r.status, url: r.url, type: r.headers.get("content-type") || "", body: await r.text() }));
+  let reading = false;
+  async function readLink(link) {
+    if (reading) return;
+    let host = link;
+    try { host = new URL(link).hostname.replace(/^www\./, ""); } catch (e) { /* shown as typed */ }
+    reading = true;
+    toast("Reading the listing from " + host + "...", 45000);
+    try {
+      const { L } = await window.TallyLinks.read(link, fetchPage);
+      if (!L.price && !L.doors && !L.gross) { toast(`Found no listing at that link on ${host}. Copy the page and paste the text instead`, 5000); return; }
+      await putDeal(L);
+      const missing = [!L.price && "price", !L.doors && "units", !L.gross && "gross revenue"].filter(Boolean);
+      toast(missing.length ? `Read ${host}, but it gives no ${missing.join(" or ")}: fill in the 0s` : `Read the listing from ${host} into a deal sheet`, 4000);
+    } catch (e) {
+      toast("Could not read that link: " + ((e && e.message) || e), 5000);
+    } finally { reading = false; }
+  }
+  // Android's share button hands Tally the shared text (see android/)
+  window.tallyReadLink = text => {
+    const link = window.TallyLinks && window.TallyLinks.findLink(text);
+    if (link) readLink(link); else toast("No link in what was shared", 3000);
+  };
 
   async function closeSheet(i) {
     const s = sheets[i];

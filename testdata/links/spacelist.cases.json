@@ -1,0 +1,14 @@
+[
+  { "url": "https://www.spacelist.ca/listings/978470/qc/montreal/for-sale/retail-multifamily/5059-71_avenue_papineau",
+    "want": { "price": 1950000, "doors": 0, "gross": null, "taxes": 21621, "year": 1924, "address": "5059-71 Avenue Papineau, Montréal", "source": "Spacelist" } },
+  { "url": "https://www.spacelist.ca/listings/994840/qc/montreal/for-sale/multifamily/2402_rue_florian",
+    "want": { "price": null, "doors": 8, "unitMix": "", "taxes": null, "address": "2402 Rue Florian, Montréal", "source": "Spacelist" } },
+  { "url": "https://www.spacelist.ca/listings/980117/on/ottawa/for-sale/multifamily/245_laurier_avenue_east",
+    "want": { "price": null, "doors": 15, "gross": null, "year": 1858, "address": "245 Laurier Avenue East, Ottawa", "source": "Spacelist" } },
+  { "url": "https://www.spacelist.ca/listings/977012/on/ottawa/for-sale/multifamily/144_renfrew_avenue",
+    "want": { "price": 4995000, "res": 13, "com": 1, "unitMix": "", "year": 2021, "address": "144 Renfrew Avenue, Ottawa", "source": "Spacelist" } },
+  { "url": "https://www.spacelist.ca/listings/969824/qc/montreal/for-sale/retail-multifamily/329_rue_ontario_est_montreal_qc",
+    "want": { "price": 4250000, "res": 6, "com": 2, "unitMix": "", "address": "329 RUE ONTARIO EST, MONTRÉAL", "source": "Spacelist" } },
+  { "url": "https://www.spacelist.ca/listings/976988/qc/montreal/for-sale/retail-multifamily/1231-1233_avenue_greene",
+    "want": { "price": 1848000, "res": 0, "com": 0, "unitMix": "", "address": "1231-1233 Avenue Greene, Westmount", "source": "Spacelist" } }
+]

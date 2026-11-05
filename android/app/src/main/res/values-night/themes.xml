@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- a dark theme also makes the WebView report prefers-color-scheme: dark to the page -->
+    <color name="page">#151515</color>
+    <style name="Tally" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/page</item>
+    </style>
+</resources>

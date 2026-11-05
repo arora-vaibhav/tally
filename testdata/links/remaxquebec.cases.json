@@ -1,0 +1,16 @@
+[
+  { "url": "https://www.remax-quebec.com/fr/proprietes/multiplex-a-vendre/1155-rue-des-pelicans-st-jerome-st-antoine-20338039",
+    "want": { "price": 2699900, "res": 12, "com": 0, "gross": 183408, "taxes": 18019, "insurance": 7875, "energy": null, "year": 1977, "centris": "20338039", "address": "1155 Rue des Pélicans, Saint-Jérôme (Saint-Antoine)", "source": "RE/MAX Quebec" } },
+  { "url": "https://www.remax-quebec.com/en/properties/multiplex-for-sale/1155-rue-des-pelicans-st-jerome-st-antoine-20338039",
+    "want": { "price": 2699900, "doors": 12, "gross": 183408, "taxes": 18019, "insurance": 7875, "year": 1977, "centris": "20338039" } },
+  { "url": "https://www.remax-quebec.com/fr/proprietes/multiplex-a-vendre/325-329-rue-st-germain-saint-jean-sur-richelieu-saint-jean-sur-richelieu-25556803",
+    "want": { "price": 1289000, "res": 5, "gross": 79848, "taxes": 6767, "insurance": 5513, "energy": 2400, "otherListed": 908, "otherRows": "déneigement, pelouse", "year": 1955, "centris": "25556803", "address": "325 - 329 Rue St-Germain, Saint-Jean-sur-Richelieu (Saint-Jean-sur-Richelieu)" } },
+  { "url": "https://www.remax-quebec.com/fr/proprietes/quadruplex-a-vendre/936-940-1re-avenue-limoilou-20222075",
+    "want": { "price": 689000, "res": 4, "gross": 48900, "taxes": 5767, "energy": null, "year": 1928, "address": "936 - 940 1re Avenue, Québec (La Cité-Limoilou) (Vieux Limoilou)" } },
+  { "url": "https://www.remax-quebec.com/en/properties/commercial-for-rent/2964-rue-de-louvain-e-st-michel-19797915",
+    "want": { "price": null, "centris": "19797915", "address": "2964 Rue de Louvain E., Montréal (Villeray/Saint-Michel/Parc-Extension) (Saint-Michel)" } },
+  { "url": "https://www.remax-quebec.com/en/properties/quadruplex-for-sale/1710-1714-rue-fleury-e-montreal-ahuntsic-cartierville-ahuntsic-central-12394596",
+    "want": { "res": 3, "com": 1, "gross": 58800, "taxes": 9197, "year": 1952 } },
+  { "url": "https://www.remax-quebec.com/fr/proprietes/multiplex-a-vendre/5963-5979-rue-waverly-montreal-le-plateau-mont-royal-mile-end-28853051",
+    "want": { "price": 3175000, "res": 9, "com": 0, "gross": 151320, "taxes": 18470, "insurance": 7915, "address": "5963 - 5979 Rue Waverly, Montréal (Le Plateau-Mont-Royal) (Mile-End)" } }
+]

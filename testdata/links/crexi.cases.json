@@ -1,0 +1,8 @@
+[
+  { "url": "https://www.crexi.com/properties/2634864/california-grace-apartments",
+    "want": { "price": 3859000, "res": 18, "doors": 18, "gross": null, "taxes": null, "address": "1918 GRACE AVE, Los Angeles", "source": "Crexi" } },
+  { "url": "https://www.crexi.com/properties/2726479/south-carolina-boxwood-terrace-apartments",
+    "want": { "price": 2700000, "res": 32, "year": null, "doors": 32, "gross": null, "taxes": null, "address": "1318 Durst Avenue East, Greenwood", "source": "Crexi" } },
+  { "url": "https://www.crexi.com/properties/2701429/new-york-17-unit-multifamily-property",
+    "want": { "price": null, "res": 17, "doors": 17, "address": "1488 Bushwick Ave, Brooklyn", "source": "Crexi" } }
+]

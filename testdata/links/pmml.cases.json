@@ -1,0 +1,12 @@
+[
+  { "url": "https://pmml.ca/en/properties/multifamily/22022246-borddeleau-salaberrydevalleyfield--hihtcd",
+    "want": { "price": 20650000, "res": 64, "com": 0, "gross": 1207032, "taxes": 185233, "insurance": 38480, "energy": 13030, "otherListed": 23680, "year": 2022, "address": "2202-2246 Bord-de-l'Eau, Salaberry-de-Valleyfield", "source": "PMML" } },
+  { "url": "https://pmml.ca/en/properties/multifamily/4043-4047-ontario-e-hochelagamaisonneuve--9qja7a",
+    "want": { "price": 4840000, "res": 16, "com": 2, "gross": 343545, "taxes": 44956, "insurance": 9197, "energy": 17126, "otherListed": 8320, "year": 2018, "address": "4043 - 4047 Ontario E., Hochelaga-Maisonneuve", "source": "PMML" } },
+  { "url": "https://pmml.ca/proprietes/multi-logements/858868-saintfrancois-terrebonne--iaqx2r",
+    "want": { "price": 4125000, "res": 6, "com": 0, "gross": 200316, "taxes": 13371, "insurance": 8057, "energy": null, "otherListed": 8052, "year": 2023, "address": "858-868 Saint-François, Terrebonne", "source": "PMML" } },
+  { "url": "https://pmml.ca/en/properties/retail/36513655-ontario-est-mercier-montreal--0432s8",
+    "want": { "price": 1849000, "res": 2, "com": 3, "gross": 101628, "taxes": 9582, "insurance": 5500, "energy": null, "otherListed": null, "year": 1926, "address": "3651\u20133655 Ontario East, Montréal", "source": "PMML" } },
+  { "url": "https://pmml.ca/en/properties/retail/2-meadowbrook-morinheights--ugj4kc",
+    "want": { "price": 2500000, "doors": 0, "gross": 263739, "taxes": 19228, "insurance": 4803, "energy": 26757, "otherListed": 13704, "otherRows": "snow removal, janitor", "year": 2012, "address": "2 Meadowbrook, Morin-Heights", "source": "PMML" } }
+]

@@ -10,6 +10,55 @@ permissions:
   contents: write # publishing a release on a version tag
 
 jobs:
+  # The Android app: the same web/ page in a thin native shell (android/README.md).
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.11.1
+
+      # A tag build carries its version and must be signed with the release key, or phones that
+      # have Tally could not install the update over it. Other builds without the key are
+      # debug-signed, so pull requests from forks still build.
+      - name: Test and build the APK
+        working-directory: android
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          TALLY_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          TALLY_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          TALLY_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          version=dev
+          if [ "$GITHUB_REF_TYPE" = tag ]; then version="$GITHUB_REF_NAME"; fi
+          # the version code comes from x.y.z; any other tag would give code 1, which cannot install over a release
+          if [ "$version" != dev ] && ! echo "$version" | grep -Eq '^v?[0-9]+\.[0-9]+(\.[0-9]+)?$'; then
+            echo "::error::tag $version is not vX.Y.Z; the APK needs it for its version code"
+            exit 1
+          fi
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/tally-release.jks"
+            export TALLY_KEYSTORE="$RUNNER_TEMP/tally-release.jks"
+          elif [ "$version" != dev ]; then
+            echo "::error::ANDROID_KEYSTORE_B64 is not set; a release APK must carry the release key"
+            exit 1
+          fi
+          gradle --no-daemon testDebugUnitTest assembleRelease -PtallyVersion="$version"
+          cp app/build/outputs/apk/release/app-release.apk Tally-android.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Tally-android
+          path: android/Tally-android.apk
+
+  # No needs here: an Android failure must not hold up the Windows tests and build.
   build:
     runs-on: windows-latest
     steps:
@@ -24,7 +73,7 @@ jobs:
           go-version-file: go.mod
 
       - name: Engine and prediction tests
-        run: node test_engine.js && node test_predict.js && node test_deal.js
+        run: node test_engine.js && node test_predict.js && node test_deal.js && node test_links.js
 
       - name: Storage tests
         run: go test ./...
@@ -47,10 +96,27 @@ jobs:
           name: Tally-windows
           path: dist/*.exe
 
+  # A tag publishes both builds in one release, so it waits for both jobs.
+  release:
+    needs: [android, build]
+    if: github.ref_type == 'tag'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: Tally-windows
+          path: dist
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: Tally-android
+          path: dist
+
       # Release notes are the tag's message plus checksums; Tally checks its download
       # against the SHA-256 GitHub records for each file.
       - name: Publish the release
-        if: github.ref_type == 'tag'
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
@@ -58,8 +124,8 @@ jobs:
           $tag = $env:GITHUB_REF_NAME
           git fetch --force origin "refs/tags/${tag}:refs/tags/${tag}"
           $notes = (git tag -l --format='%(contents)' $tag) -join "`n"
-          $sums = Get-ChildItem dist/*.exe | ForEach-Object { "{0}  {1}" -f (Get-FileHash $_ -Algorithm SHA256).Hash.ToLower(), $_.Name }
+          $sums = Get-ChildItem dist/*.exe, dist/Tally-android.apk | ForEach-Object { "{0}  {1}" -f (Get-FileHash $_ -Algorithm SHA256).Hash.ToLower(), $_.Name }
           $fence = '```'
           $body = $notes.Trim() + "`n`nSHA-256:`n`n$fence`n" + ($sums -join "`n") + "`n$fence`n"
           Set-Content -Path notes.md -Value $body -Encoding utf8NoBOM
-          gh release create $tag dist/Tally-Setup-x64.exe dist/Tally-Setup-arm64.exe dist/Tally-x64.exe dist/Tally-arm64.exe --title ("Tally " + $tag.TrimStart("v")) --notes-file notes.md --verify-tag
+          gh release create $tag dist/Tally-Setup-x64.exe dist/Tally-Setup-arm64.exe dist/Tally-x64.exe dist/Tally-arm64.exe dist/Tally-android.apk --title ("Tally " + $tag.TrimStart("v")) --notes-file notes.md --verify-tag

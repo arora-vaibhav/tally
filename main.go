@@ -233,6 +233,7 @@ func main() {
 	// the cache and tells the page when newer rates arrive. The window never waits on the network.
 	ratesFile = filepath.Join(local, "Tally", "rates.json")
 	w.Bind("tallyRates", cachedRates)
+	w.Bind("tallyFetch", fetchPage) // listing links (fetch.go)
 	go func() {
 		if refreshRates() {
 			w.Dispatch(func() { w.Eval("window.tallyRatesUpdated && window.tallyRatesUpdated()") })

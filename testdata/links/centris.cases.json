@@ -1,0 +1,32 @@
+[
+  {
+    "url": "https://www.centris.ca/fr/multifamilial~a-vendre~sherbrooke-les-nations/12761853",
+    "want": {
+      "price": 995000,
+      "res": 0,
+      "com": 3,
+      "gross": 134040,
+      "taxes": 12783,
+      "energy": 23332,
+      "year": 1950,
+      "centris": "12761853",
+      "address": "1009Z - 1011Z, Rue Galt Ouest, Sherbrooke (Les Nations)",
+      "source": "Centris"
+    }
+  },
+  {
+    "url": "https://www.centris.ca/en/triplexes~for-sale~sherbrooke-fleurimont/17702854",
+    "want": {
+      "price": 649000,
+      "res": 3,
+      "com": 0,
+      "gross": 33660,
+      "taxes": 5437,
+      "insurance": 1803,
+      "year": 1997,
+      "centris": "17702854",
+      "address": "1640 - 1644, Rue des Roses, Sherbrooke (Fleurimont)",
+      "source": "Centris"
+    }
+  }
+]

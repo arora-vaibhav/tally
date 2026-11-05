@@ -1,6 +1,9 @@
 package main
 
 import (
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -319,5 +322,51 @@ func TestRenameKeyEncodingAndMoveAside(t *testing.T) {
 	os.WriteFile(exe, []byte("v2"), 0o644)
 	if second := moveAside(exe); second == "" || second == first || exists(exe) {
 		t.Fatalf("second moveAside = %q (first %q)", second, first)
+	}
+}
+
+func TestFetchPage(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "POST" {
+			b, _ := io.ReadAll(r.Body)
+			w.Write([]byte(r.Header.Get("X-Test") + ":" + string(b)))
+			return
+		}
+		w.Header().Set("Content-Type", "text/html")
+		w.Write([]byte("<p>Prix 995 000 $</p>"))
+	}))
+	defer srv.Close()
+	r, err := fetchPage(srv.URL, nil)
+	if err != nil || r.Status != 200 || r.Body != "<p>Prix 995 000 $</p>" || r.Type != "text/html" {
+		t.Fatalf("get: %+v %v", r, err)
+	}
+	r, err = fetchPage(srv.URL, &fetchOpts{Method: "post", Headers: map[string]string{"X-Test": "h"}, Body: "b"})
+	if err != nil || r.Body != "h:b" {
+		t.Fatalf("post: %+v %v", r, err)
+	}
+	for _, bad := range []string{"file:///c:/x.txt", "javascript:alert(1)", "not a link", ""} {
+		if _, err := fetchPage(bad, nil); err == nil {
+			t.Errorf("%q should be refused", bad)
+		}
+	}
+}
+
+// TALLY_LIVE="url1 url2" go test -run TestFetchLive : does the app's own fetch get each page?
+// Some sites (Cloudflare) refuse some HTTP clients by fingerprint, so this checks the real one.
+func TestFetchLive(t *testing.T) {
+	links := strings.Fields(os.Getenv("TALLY_LIVE"))
+	if len(links) == 0 {
+		t.Skip("set TALLY_LIVE to a list of links")
+	}
+	for _, l := range links {
+		r, err := fetchPage(l, nil)
+		if err != nil {
+			t.Errorf("%s: %v", l, err)
+			continue
+		}
+		t.Logf("%d %7d bytes  %s", r.Status, len(r.Body), l)
+		if r.Status != 200 {
+			t.Errorf("%s: status %d", l, r.Status)
+		}
 	}
 }

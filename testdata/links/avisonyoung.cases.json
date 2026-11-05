@@ -1,0 +1,18 @@
+[
+  { "url": "https://www.avisonyoung.ca/properties/2018-2020-saint-denis",
+    "want": { "price": 8300000, "res": 35, "com": 1, "doors": 36, "year": 1870, "address": "2018-2020, rue Saint-Denis, Montreal", "source": "Avison Young" } },
+  { "url": "https://www.avisonyoung.ca/fr/proprietes/2018-2020-saint-denis",
+    "want": { "price": 8300000, "res": 35, "com": 1, "year": 1870, "address": "2018-2020, rue Saint-Denis, Montreal" } },
+  { "url": "https://www.avisonyoung.ca/properties/1148-oscar-street-victoria-sale",
+    "want": { "price": 3399000, "res": 12, "com": 0, "gross": null, "taxes": null, "address": "1148 Oscar Street, Victoria" } },
+  { "url": "https://ayca1148oscarstreet.sharplaunch.com",
+    "want": { "price": 3399000, "res": 12, "address": "1148 Oscar Street, Victoria", "source": "Avison Young" } },
+  { "url": "https://www.avisonyoung.ca/properties/442-sunnyside-avenue-ottawa-sale",
+    "want": { "price": 2790000, "res": 3, "address": "442 Sunnyside Avenue, Ottawa" } },
+  { "url": "https://www.avisonyoung.us/properties/495-amsterdam-avenue",
+    "want": { "price": 12500000, "res": 11, "gross": null, "address": "495 Amsterdam Avenue, New York" } },
+  { "url": "https://www.avisonyoung.ca/properties/pine-creek-manor",
+    "want": { "price": null, "res": 174, "year": 2018, "address": "1671 Jamha Road NW, Edmonton" } },
+  { "url": "https://yorkavenueapartments.sharplaunch.com/",
+    "want": { "price": 5549000, "res": 20, "year": 2021, "source": "SharpLaunch" } }
+]

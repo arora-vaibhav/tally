@@ -1,0 +1,10 @@
+[
+  { "url": "https://macdonaldcommercial.com/properties/985-broughton-street-vancouver-sale/",
+    "want": { "price": 3300000, "doors": 15, "gross": null, "taxes": null, "address": "985 Broughton Street, Vancouver", "source": "Buildout" } },
+  { "url": "https://macdonaldcommercial.com/properties/812-chesterfield-avenue-north-vancouver-sale/",
+    "want": { "price": 3499000, "doors": 10, "year": 1955, "address": "812 Chesterfield Avenue, North Vancouver", "source": "Buildout" } },
+  { "url": "https://buildout.com/plugins/9a71812e525d3bbec5094041b6af3150a4ddade4/macdonaldcommercial.com/inventory/821-sixth-avenue-hope-sale",
+    "want": { "price": 3900000, "res": 5, "com": 5, "year": 1992, "address": "821 Sixth Avenue, Hope", "source": "Buildout" } },
+  { "url": "https://macdonaldcommercial.com/properties/1549-west-33rd-avenue-vancouver-sale/",
+    "want": { "res": 0, "com": 0, "doors": 0, "address": "1549 West 33rd Avenue, Vancouver", "source": "Buildout" } }
+]

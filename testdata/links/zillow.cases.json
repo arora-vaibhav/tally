@@ -1,0 +1,6 @@
+[
+  { "url": "https://www.zillow.com/homedetails/1851-N-Karlov-Ave-Chicago-IL-60639/441024017_zpid/",
+    "want": { "price": 200000, "res": 3, "doors": 3, "gross": null, "taxes": null, "year": 1903, "address": "1851 N Karlov Ave, Chicago", "source": "Zillow" } },
+  { "url": "https://www.zillow.com/homedetails/4329-S-Wood-St-Chicago-IL-60609/3981550_zpid/",
+    "want": { "price": 149999, "res": 3, "doors": 3, "gross": null, "taxes": null, "year": 1950, "address": "4329 S Wood St, Chicago", "source": "Zillow" } }
+]

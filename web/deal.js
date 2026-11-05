@@ -27,7 +27,7 @@
   // "Taxes<tab>7 939 $", "asking price of $4.9M"), or alone on the next line, which is how a
   // copied Centris page reads. A figure further away is someone else's: in "Tenants pay their
   // own electricity, except units 1 and 7" the 1 is not the electricity bill.
-  const NEAR = new RegExp(String.raw`^\s*(?:[:=\-]|of|is|at|de)?\s*` + FIG);
+  const NEAR = new RegExp(String.raw`^\s*(?:[:=\-]|of|is|at|de)?\s*~?\s*` + FIG); // "~$103,000/year" is still the figure
   const ALONE = new RegExp(String.raw`^\s*` + FIG + String.raw`\s*\$?\s*$`);
   function figures(lines, label) {
     const out = [];
@@ -58,6 +58,29 @@
   const GREATER = /laval|longueuil|brossard|terrebonne|saint-lambert|boucherville|chambly|saint-bruno|sainte-th[ée]r[èe]se|repentigny|blainville|mascouche|boisbriand|saint-eustache|ch[âa]teauguay|la prairie|candiac|vaudreuil/i;
   const CITY = /qu[ée]bec|l[ée]vis|gatineau|sherbrooke|trois-rivi[èe]res|saint-j[ée]r[ôo]me|drummondville|granby|saint-jean-sur-richelieu|saguenay|joliette|magog|victoriaville/i;
 
+  // The market area comes from the building's own town (the last part of its address); other
+  // text is only a fallback, since a broker's office address names another town.
+  const area = w => ISLAND.test(w) ? ["Montreal island", 0.05] : GREATER.test(w) ? ["greater Montreal", 0.0525]
+    : CITY.test(w) ? ["a regional city", 0.0575] : null;
+  function areaOf(address, other) {
+    const town = address.includes(",") ? address.split(",").pop() : address;
+    return area(town) || area(address) || area(other || "") || ["a small town, or the area is not clear", 0.065];
+  }
+
+  // fromFields completes a listing a site reader filled in field by field (links.js): the same
+  // shape readListing returns, with doors, area and the missing-finance flag worked out.
+  function fromFields(f) {
+    const L = Object.assign({ price: null, res: 0, com: 0, unitMix: "", gross: null, taxes: null, insurance: null,
+      energy: null, otherListed: null, otherRows: "", year: null, centris: "", address: "" }, f);
+    if (!L.res && !L.com && f.doors) L.res = f.doors;
+    L.doors = (L.res || 0) + (L.com || 0);
+    L.address = (L.address || "").trim();
+    L.area = areaOf(L.address, f.areaHint);
+    L.missingFinance = !L.taxes && !L.energy && !L.insurance;
+    L.isSheet = false;
+    return L;
+  }
+
   // readListing pulls what a napkin needs from pasted text. Missing figures are null.
   function readListing(text) {
     const lines = text.replace(/\r/g, "").split("\n").map(l => l.replace(/\s+/g, " ").trim()).filter(Boolean);
@@ -78,15 +101,17 @@
     if (!(res + com)) {
       // a count is 1 to 2,000; anything bigger next to "units" is a price per unit
       const u = first(lines, /\b(?:nombre d[’']unit[ée]s|number of units|total units|units?|unit[ée]s|logements|doors|suites|apartments|appartements)\b\s*:?/i, 1, 2000)
-        || Number((all.match(/\b(\d{1,4})[\s-]*(?:units?|unit[ée]s|logements|doors|suites|apartments|plex)\b/i) || [])[1] || 0);
+        // (not zoning capacity: "permits up to 6 units")
+        || Number((all.match(/(?<!up to |permits |permet |jusqu[’']à )\b(\d{1,4})[\s-]*(?:units?|unit[ée]s|logements|doors|suites|apartments|plex)\b/i) || [])[1] || 0);
       const plex = (all.match(/\b(duplex|triplex|quadruplex|fourplex|quintuplex|sixplex)\b/i) || [])[1];
       res = u && u <= 2000 ? u : plex ? { duplex: 2, triplex: 3, quadruplex: 4, fourplex: 4, quintuplex: 5, sixplex: 6 }[plex.toLowerCase()] : 0;
     }
     L.res = res; L.com = com; L.doors = res + com;
-    L.unitMix = lineAfter(lines, /unit[ée]s r[ée]sidentielles|residential units/i);
+    // only the labelled field (Centris), never "residential units" inside a broker's sentence
+    L.unitMix = lineAfter(lines, /^(?:unit[ée]s r[ée]sidentielles|residential units)\s*:?\s*$/i);
 
     // potential gross, never effective or net gross income (those already have vacancy taken off)
-    L.gross = first(lines, /(?<!(?:effective|net|effectifs?|nets?)\s)\b(?:revenus bruts potentiels|revenus bruts|potential gross (?:revenues?|incomes?|rents?)|gross (?:annual |potential |scheduled )?(?:revenues?|incomes?|rents?)|revenus)\b\s*:?/i, 1000);
+    L.gross = first(lines, /(?<!(?:effective|net|effectifs?|nets?)\s)\b(?:revenus bruts potentiels|revenus bruts|potential gross (?:revenues?|incomes?|rents?)|potential (?:income|revenues?)|revenus (?:bruts )?potentiels|gross (?:annual |potential |scheduled )?(?:revenues?|incomes?|rents?)|revenus)\b\s*:?/i, 1000);
     // a tax year may follow a tax label, in brackets or not: "Municipales (2026)", "Property taxes 2025:"
     const YEAR = String.raw`\s*(?:\(?\s*(?:19|20)\d{2}\s*\)?)?\s*:?`;
     // "Municipales (2026)" / "Municipal (2026)", never the assessment ("Évaluation municipale")
@@ -101,7 +126,7 @@
     // letter lookarounds instead of \b, which does not work next to an accented letter (Électricité)
     // the same rows napkin.py counts as energy: electricity, heating oil, gas, heating, energy
     for (const lab of [/(?<![A-Za-zÀ-ÿ])(?:[ée]lectricit[ée]|electricity|hydro)(?![A-Za-zÀ-ÿ])\s*:?/i,
-                       /(?<![A-Za-zÀ-ÿ])(?:chauffage|heating|mazout|gaz(?: naturel)?|natural gas)(?![A-Za-zÀ-ÿ])\s*:?/i,
+                       /(?<![A-Za-zÀ-ÿ])(?:chauffage|heating|mazout|gaz(?: naturel)?|natural gas|gas)(?![A-Za-zÀ-ÿ])\s*:?/i,
                        /(?<![A-Za-zÀ-ÿ])(?:[ée]nergie|energy)(?![A-Za-zÀ-ÿ])\s*:?/i]) {
       energy += largest(lines, lab, 50) || 0;
     }
@@ -110,7 +135,7 @@
     // The other rows of Centris's expense table (snow, garbage, lawn, cleaning), as napkin.py
     // counts them: each row's yearly figure (the larger of its two), without energy, insurance
     // or the total.
-    const ENERGY = /[ée]lectricit[ée]|electricity|hydro|chauffage|heating|mazout|gaz|natural gas|[ée]nergie|energy/i;
+    const ENERGY = /[ée]lectricit[ée]|electricity|hydro|chauffage|heating|mazout|gaz|\bgas\b|[ée]nergie|energy/i;
     const start = lines.findIndex(l => /^(?:d[ée]penses|expenses)$/i.test(l));
     if (start >= 0) {
       const rows = {};
@@ -133,16 +158,13 @@
 
     // address: the line after "... à vendre / for sale", else the first line that reads like one
     let addr = "";
-    const forSale = lines.findIndex(l => /(?:à vendre|for sale)$/i.test(l));
-    if (forSale >= 0 && lines[forSale + 1] && /\d/.test(lines[forSale + 1])) addr = lines[forSale + 1];
+    // (a whole page also has menu lines such as "Consulter les propriétés à vendre", so the first
+    // one followed by a line with a number in it)
+    const forSale = lines.findIndex((l, i) => /(?:à vendre|for sale)$/i.test(l) && /\d/.test(lines[i + 1] || ""));
+    if (forSale >= 0) addr = lines[forSale + 1];
     if (!addr) addr = lines.find(l => /^\d[\d\s,-]*\s*,?\s*(?:rue|avenue|av\.?|boul(?:evard)?\.?|bd|chemin|ch\.?|place|street|st\.?|road|rd\.?|drive|dr\.?|blvd|route|rang|mont[ée]e)\b/i.test(l) && l.length < 120) || "";
     L.address = addr.replace(/\s*\|.*$/, "").trim();
-    // the market area comes from the building's own town (the last part of its address); the
-    // rest of the text is only a fallback, since a broker's office address names another town
-    const area = w => ISLAND.test(w) ? ["Montreal island", 0.05] : GREATER.test(w) ? ["greater Montreal", 0.0525]
-      : CITY.test(w) ? ["a regional city", 0.0575] : null;
-    const town = L.address.includes(",") ? L.address.split(",").pop() : L.address;
-    L.area = area(town) || area(L.address) || area(all.slice(0, 2000)) || ["a small town, or the area is not clear", 0.065];
+    L.area = areaOf(L.address, all.slice(0, 2000));
     // a Centris page copied without its financial block (which opens with "Voir plus")
     L.missingFinance = !!L.centris && !L.taxes && !L.energy && !L.insurance;
     // Tally's own lines ("price = 1,475,000") are a sheet, not a listing
@@ -172,9 +194,12 @@
     const title = L.address || (blank ? "New deal" : "Pasted listing");
     const head = [`# ${title}, the ask`];
     if (!blank) {
-      head.push(`// ${L.centris ? "Centris " + L.centris + ", read" : "Read"} from a pasted listing${today ? " on " + today : ""}. Check each figure against the listing.`);
+      const from = L.url ? `from ${L.url}` : "from a pasted listing";
+      head.push(`// ${L.centris ? "Centris " + L.centris + ", read" : "Read"} ${from}${today ? " on " + today : ""}. Check each figure against the listing.`);
       head.push(`// ${res} residential and ${com} commercial units.${L.unitMix ? " " + L.unitMix : ""}${L.year ? " Built " + L.year + "." : ""}`);
-      if (L.missingFinance) {
+      if (L.missingFinance && L.url) {
+        head.push("// The listing gives no taxes or expenses, so they are guesses below.");
+      } else if (L.missingFinance) {
         head.push("// No taxes or expenses came with this paste, so they are guesses below. On Centris, click Voir plus under");
         head.push("// Détails financiers (See more under Financial details) before copying, then paste again.");
       }
@@ -235,5 +260,5 @@
     ].join("\n");
   }
 
-  return { readListing, looksLikeListing, dealSheet };
+  return { readListing, looksLikeListing, dealSheet, fromFields };
 });

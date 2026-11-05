@@ -1,0 +1,8 @@
+[
+  { "url": "https://www.kijiji.ca/v-house-for-sale/ville-de-montreal/4plex-a-vendre-hochelaga-maisonneuve-revenus-77-616-an/1744829454",
+    "want": { "price": 1390000, "res": 4, "doors": 4, "gross": 77616, "taxes": null, "year": 1910, "address": "Montreal", "source": "Kijiji" } },
+  { "url": "https://www.kijiji.ca/v-house-for-sale/ville-de-montreal/1-120-000-quintuplex-for-sale-in-lachine/1733623965",
+    "want": { "price": 1120000, "res": 5, "doors": 5, "gross": null, "taxes": null, "address": "rue Sherbrooke, Lachine", "source": "Kijiji" } },
+  { "url": "https://www.kijiji.ca/v-house-for-sale/sherbrooke-qc/685-000-6-units-or-more-for-sale-in-ascot-corner/1740295498",
+    "want": { "price": 685000, "res": 6, "doors": 6, "gross": null, "taxes": null, "address": "rue Principale, Ascot Corner", "source": "Kijiji" } }
+]

@@ -1,0 +1,10 @@
+[
+  { "url": "https://www.royallepage.ca/en/property/quebec/mirabel/12205-12209-rue-felix-lallier/29519487/mls9346008/",
+    "want": { "price": 1150000, "res": 3, "com": 0, "gross": 57000, "taxes": 4635, "energy": null, "year": 2017, "centris": "9346008", "address": "12205 - 12209 Rue Felix-L'Allier, Mirabel", "source": "Royal LePage" } },
+  { "url": "https://www.royallepage.ca/fr/property/quebec/mont-tremblant/1030-1034-rue-labelle/29520672/mls24527815/",
+    "want": { "price": 749000, "doors": 3, "gross": 24780, "taxes": 5432, "year": 1996, "centris": "24527815", "address": "1030 - 1034 Rue Labelle, Mont-Tremblant" } },
+  { "url": "https://www.royallepage.ca/en/property/ontario/toronto/89-seaton-street/29520291/mlsc14131022/",
+    "want": { "price": 918000, "res": 2, "gross": null, "taxes": null, "centris": "", "address": "89 SEATON STREET, Toronto" } },
+  { "url": "https://www.royallepage.ca/en/property/quebec/saint-jerome/2220-mtee-ste-therese/29519495/mls15814557/",
+    "want": { "price": 1795000, "doors": 0, "taxes": 3839, "energy": 4570, "insurance": null, "year": 1988, "address": "2220 Mtée Ste-Therese, Saint-Jérôme" } }
+]
